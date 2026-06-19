@@ -225,15 +225,21 @@ https://covers.openlibrary.org/b/id/COVER_ID-L.jpg
 
 ### Home Page
 
-Add a screenshot here.
+
+<img width="1917" height="913" alt="image" src="https://github.com/user-attachments/assets/b52eef29-628a-4703-bea5-0c3fd146fe46" />
+
 
 ### Add Book Page
 
-Add a screenshot here.
+
+<img width="1335" height="905" alt="image" src="https://github.com/user-attachments/assets/1cb8bfdd-1a60-4b0c-be91-e66d278fbbba" />
+
 
 ### Dark Mode
 
-Add a screenshot here.
+
+<img width="1919" height="916" alt="image" src="https://github.com/user-attachments/assets/4dd0b1d4-0f28-41ad-803d-ae0b992e6cc2" />
+
 
 ---
 
