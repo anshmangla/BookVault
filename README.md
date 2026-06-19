@@ -4,9 +4,9 @@ A full-stack book tracking and review platform that helps readers organize their
 
 ## 🚀 Live Demo
 
-**Live Application:** https://your-render-url.onrender.com
+**Live Application:** https://bookvault-elmm.onrender.com/
 
-**GitHub Repository:** https://github.com/yourusername/bookvault
+**GitHub Repository:** https://github.com/anshmangla/BookVault
 
 ---
 
@@ -276,9 +276,9 @@ B.Tech (Artificial Intelligence & Machine Learning)
 
 Passionate about AI, Machine Learning, Generative AI, and Full-Stack Development.
 
-GitHub: https://github.com/yourusername
+GitHub: https://github.com/anshmangla
 
-LinkedIn: https://linkedin.com/in/yourprofile
+LinkedIn: https://linkedin.com/in/anshmangla
 
 ---
 
