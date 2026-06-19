@@ -1,0 +1,215 @@
+<%- include("partials/header") %>
+
+<div class="hero shadow-sm">
+
+  <h1>
+    My Reading Library
+  </h1>
+
+  <p class="text-muted">
+    Track books, notes and reviews.
+  </p>
+
+</div>
+
+<div class="row mb-4">
+
+  <div class="col-md-4">
+
+    <div class="card stats-card shadow-sm">
+
+      <div class="card-body">
+
+        <h5>Total Books</h5>
+
+        <h2><%= totalBooks %></h2>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="col-md-4">
+
+    <div class="card stats-card shadow-sm">
+
+      <div class="card-body">
+
+        <h5>Average Rating</h5>
+
+        <h2>⭐ <%= avgRating %></h2>
+
+      </div>
+
+    </div>
+
+  </div>
+
+  <div class="col-md-4">
+
+    <div class="card stats-card shadow-sm">
+
+      <div class="card-body">
+
+        <h5>Top Book</h5>
+
+        <p>
+          <%= topBook
+          ? topBook.title
+          : "No books yet" %>
+        </p>
+
+      </div>
+
+    </div>
+
+  </div>
+
+</div>
+
+<div class="row mb-4">
+
+  <div class="col-md-6">
+
+    <form action="/search"
+          method="GET">
+
+      <div class="input-group">
+
+        <input
+          type="text"
+          class="form-control"
+          placeholder="Search title or author"
+          name="q">
+
+        <button
+          class="btn btn-dark">
+          Search
+        </button>
+
+      </div>
+
+    </form>
+
+  </div>
+
+  <div class="col-md-6 text-end">
+
+    <a href="/"
+       class="btn btn-secondary">
+      All
+    </a>
+
+    <a href="/?sort=rating"
+       class="btn btn-success">
+      Rating
+    </a>
+
+    <a href="/?sort=recent"
+       class="btn btn-primary">
+      Recent
+    </a>
+
+  </div>
+
+</div>
+
+<div class="row">
+
+<% if (books.length === 0) { %>
+
+  <div class="text-center">
+
+    <h3>No Books Yet</h3>
+
+    <p>
+      Start building your library.
+    </p>
+
+  </div>
+
+<% } %>
+
+<% books.forEach(book => { %>
+
+<div class="col-lg-4 col-md-6 mb-4">
+
+<div class="card shadow-sm book-card h-100">
+
+<% if(book.cover_url){ %>
+
+    <div class="cover-container">
+        
+        <img
+        src="<%= book.cover_url %>"
+        class="book-cover"
+        alt="<%= book.title %>"
+        >
+        
+    </div>
+        
+<% } %>
+
+<div class="card-body">
+
+<h5>
+  <%= book.title %>
+</h5>
+
+<p class="text-muted">
+  <%= book.author %>
+</p>
+
+<p>
+  ⭐ <%= book.rating || "N/A" %>
+</p>
+
+<div class="review-preview">
+
+<p>
+
+<%= book.review
+? book.review.substring(0,100)
+: "" %>
+
+</p>
+
+</div>
+
+</div>
+
+<div class="card-footer d-flex justify-content-between">
+
+<a
+ href="/edit/<%= book.id %>"
+ class="btn btn-warning">
+
+ Edit
+
+</a>
+
+<form
+action="/delete/<%= book.id %>?_method=DELETE"
+method="POST">
+
+<button
+class="btn btn-danger">
+
+Delete
+
+</button>
+
+</form>
+
+</div>
+
+</div>
+
+</div>
+
+<% }) %>
+
+</div>
+
+<%- include("partials/footer") %>

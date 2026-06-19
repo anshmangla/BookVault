@@ -1,0 +1,69 @@
+</div>
+
+<footer>
+
+  <p>
+    Built with ❤️ using Node.js, Express,
+    Neon PostgreSQL and Open Library API
+  </p>
+
+</footer>
+
+<script>
+
+  const toggleButton =
+    document.getElementById("themeToggle");
+  
+  const savedTheme =
+  localStorage.getItem("theme");
+
+  if (!savedTheme) {
+
+    if (
+      window.matchMedia(
+        "(prefers-color-scheme: dark)"
+      ).matches
+    ) {
+
+      document.body.classList.add("dark-mode");
+
+    }
+
+  }
+  
+  if (savedTheme === "dark") {
+    document.body.classList.add("dark-mode");
+    toggleButton.innerHTML = "☀️";
+  }
+  
+  toggleButton.addEventListener("click", () => {
+  
+    document.body.classList.toggle("dark-mode");
+  
+    if (
+      document.body.classList.contains("dark-mode")
+    ) {
+  
+      localStorage.setItem(
+        "theme",
+        "dark"
+      );
+  
+      toggleButton.innerHTML = "☀️";
+  
+    } else {
+  
+      localStorage.setItem(
+        "theme",
+        "light"
+      );
+  
+      toggleButton.innerHTML = "🌙";
+    }
+  
+  });
+  
+  </script>
+  
+  </body>
+  </html>

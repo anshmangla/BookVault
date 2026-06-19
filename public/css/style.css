@@ -1,0 +1,116 @@
+body {
+    background-color: #f8f9fa;
+  }
+  
+  /* .book-cover {
+    height: 350px;
+    object-fit: cover;
+  } */
+  
+  .book-card {
+    transition: transform 0.2s ease;
+  }
+  
+  .book-card:hover {
+    transform: translateY(-5px);
+  }
+  
+  .stats-card {
+    border-radius: 15px;
+  }
+
+  .stats-card {
+    transition: all 0.3s ease;
+  }
+  
+  .stats-card:hover {
+    transform: translateY(-3px);
+  }
+  
+  .hero {
+    padding: 40px;
+    border-radius: 20px;
+    background: white;
+    margin-bottom: 30px;
+  }
+  
+  .review-preview {
+    min-height: 80px;
+  }
+  
+  footer {
+    margin-top: 50px;
+    padding: 20px;
+    text-align: center;
+    color: gray;
+  }
+  .cover-container {
+    height: 400px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+  }
+  
+  .book-cover {
+    max-height: 100%;
+    max-width: 100%;
+    object-fit: contain;
+  }
+
+/* =========================
+   DARK MODE
+========================= */
+
+.dark-mode {
+  background-color: #121212 !important;
+  color: #ffffff !important;
+}
+
+/* .dark-mode .hero,
+.dark-mode .card,
+.dark-mode .cover-container {
+  background-color: #1e1e1e !important;
+  color: white !important;
+} */
+
+.dark-mode .hero,
+.dark-mode .card {
+  background-color: #1f1f1f !important;
+  color: white !important;
+}
+
+.dark-mode .cover-container {
+  background-color: #181818 !important;
+  color: white !important;
+}
+
+.dark-mode .card-footer {
+  background-color: #1e1e1e !important;
+}
+
+.dark-mode .text-muted {
+  color: #bdbdbd !important;
+}
+
+.dark-mode .form-control {
+  background-color: #2a2a2a;
+  color: white;
+  border-color: #444;
+}
+
+.dark-mode .form-control::placeholder {
+  color: #999;
+}
+
+.dark-mode .navbar {
+  background-color: #000 !important;
+}
+
+.dark-mode footer {
+  color: #bdbdbd;
+}
+
+.dark-mode .cover-container {
+  border-bottom: 1px solid #444;
+}
