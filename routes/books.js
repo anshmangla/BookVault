@@ -111,6 +111,9 @@ router.get("/search", async (req, res) => {
 
     const searchTerm =
       req.query.q;
+      if (!searchTerm) {
+        return res.redirect("/");
+      }
 
     const result =
       await db.query(
@@ -175,6 +178,61 @@ router.get("/search", async (req, res) => {
   }
 });
 
+router.get("/search-book", (req, res) => {
+  res.render("search-book");
+});
+
+router.get("/api/books", async (req, res) => {
+
+  try {
+
+    const query = req.query.q;
+
+    if (!query) {
+      return res.json([]);
+    }
+
+    const response =
+      await axios.get(
+        `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}`
+      );
+
+    const books =
+      response.data.docs
+      .filter(book => book.cover_i)
+      .slice(0, 10)
+      .map(book => ({
+
+        title: book.title,
+
+        author:
+          book.author_name?.[0] || "",
+
+        isbn:
+          book.isbn?.[0] || "",
+
+        publish_year:
+          book.first_publish_year || "",
+
+        cover_url:
+          book.cover_i
+            ? `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg`
+            : ""
+
+      }));
+
+    res.json(books);
+
+  } catch (err) {
+
+    console.error(err);
+
+    res.status(500).json([]);
+
+  }
+
+});
+
 /*
 ====================================
 ADD BOOK PAGE
@@ -199,6 +257,7 @@ router.post("/add", async (req, res) => {
       title,
       author,
       isbn,
+      publish_year,
       rating,
       notes,
       review,
@@ -261,6 +320,7 @@ router.post("/add", async (req, res) => {
         title,
         author,
         isbn,
+        publish_year,
         rating,
         notes,
         review,
@@ -271,13 +331,14 @@ router.post("/add", async (req, res) => {
       VALUES
       (
         $1,$2,$3,$4,
-        $5,$6,$7,$8,$9
+        $5,$6,$7,$8,$9,$10
       )
       `,
       [
         title,
         author,
         isbn,
+        publish_year || null,
         rating || null,
         notes,
         review,
@@ -363,6 +424,7 @@ router.put("/edit/:id", async (req, res) => {
       title,
       author,
       isbn,
+      publish_year,
       rating,
       notes,
       review,
@@ -389,17 +451,19 @@ router.put("/edit/:id", async (req, res) => {
         title = $1,
         author = $2,
         isbn = $3,
-        rating = $4,
-        notes = $5,
-        review = $6,
-        date_read = $7
-      WHERE id = $8
-      AND user_id = $9
+        publish_year = $4
+        rating = $5,
+        notes = $6,
+        review = $7,
+        date_read = $8
+      WHERE id = $9
+      AND user_id = $10
       `,
       [
         title,
         author,
         isbn,
+        publish_year || null,
         rating || null,
         notes,
         review,

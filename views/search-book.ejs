@@ -1,0 +1,121 @@
+<%- include("partials/header") %>
+
+<h2 class="mb-4">
+  Search Book
+</h2>
+
+<div class="card p-4 shadow">
+
+  <input
+    type="text"
+    id="searchInput"
+    class="form-control"
+    placeholder="Search books..."
+  >
+
+</div>
+
+<div
+  class="row mt-4"
+  id="results">
+</div>
+
+<script>
+
+const input =
+  document.getElementById(
+    "searchInput"
+  );
+
+const results =
+  document.getElementById(
+    "results"
+  );
+
+input.addEventListener(
+  "input",
+  async () => {
+
+    const query =
+      input.value.trim();
+
+    if (query.length < 3) {
+
+      results.innerHTML = "";
+
+      return;
+
+    }
+
+    const response =
+      await fetch(
+        `/api/books?q=${query}`
+      );
+
+    const books =
+      await response.json();
+
+    results.innerHTML = "";
+
+    books.forEach(book => {
+
+      results.innerHTML +=
+      `
+      <div class="col-md-4 mb-4">
+
+        <div class="card shadow-sm h-100">
+
+          <img
+            src="${book.cover_url}"
+            style="
+            height:300px;
+            object-fit:contain;
+            padding:10px;
+            "
+          >
+
+          <div class="card-body">
+
+            <h5>
+              ${book.title}
+            </h5>
+
+            <p>
+              ${book.author}
+            </p>
+
+            <button
+              class="btn btn-success"
+              onclick='selectBook(${JSON.stringify(book)})'
+            >
+
+              Select
+
+            </button>
+
+          </div>
+
+        </div>
+
+      </div>
+      `;
+
+    });
+
+  });
+
+function selectBook(book){
+
+  localStorage.setItem(
+    "selectedBook",
+    JSON.stringify(book)
+  );
+
+  window.location =
+    "/add";
+
+}
+
+</script>
+
+<%- include("partials/footer") %>

@@ -14,6 +14,7 @@
                 </label>
 
                 <input
+                    id="title"
                     type="text"
                     name="title"
                     class="form-control"
@@ -27,6 +28,7 @@
                 </label>
 
                 <input
+                    id="author"
                     type="text"
                     name="author"
                     class="form-control"
@@ -39,9 +41,15 @@
                 </label>
 
                 <input
+                    id="isbn"
                     type="text"
                     name="isbn"
                     class="form-control"
+                >
+                <input
+                    id="publish_year"
+                    type="hidden"
+                    name="publish_year"
                 >
             </div>
 
@@ -113,4 +121,40 @@
 
     </div>
 
+    <script>
+
+        const book =
+          JSON.parse(
+            localStorage.getItem(
+              "selectedBook"
+            )
+          );
+        
+          if(book){
+
+            document.getElementById(
+            "title"
+            ).value =
+            book.title || "";
+
+            document.getElementById(
+            "author"
+            ).value =
+            book.author || "";
+
+            document.getElementById(
+            "isbn"
+            ).value =
+            book.isbn || "";
+
+            document.getElementById(
+            "publish_year"
+            ).value =
+            book.publish_year || "";
+
+            }
+        
+        </script>
+
 <%- include("partials/footer") %>
+
