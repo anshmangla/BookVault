@@ -40,10 +40,31 @@
         Home
       </a>
     
-      <a href="/add"
-         class="btn btn-success">
-        Add Book
-      </a>
+      <% if(userId){ %>
+    
+        <a href="/add"
+           class="btn btn-success me-2">
+          Add Book
+        </a>
+    
+        <a href="/logout"
+           class="btn btn-danger">
+          Logout
+        </a>
+    
+      <% } else { %>
+    
+        <a href="/register"
+           class="btn btn-outline-info me-2">
+          Register
+        </a>
+    
+        <a href="/login"
+           class="btn btn-outline-warning">
+          Login
+        </a>
+    
+      <% } %>
     
     </div>
 
