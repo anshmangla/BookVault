@@ -8,6 +8,17 @@
 
         <form action="/add" method="POST">
 
+            <div class="text-center mb-3">
+
+                <img
+                  id="bookPreview"
+                  style="
+                    max-height:250px;
+                    display:none;
+                  ">
+              
+              </div>
+
             <div class="mb-3">
                 <label class="form-label">
                     Title
@@ -124,35 +135,50 @@
     <script>
 
         const book =
-          JSON.parse(
-            localStorage.getItem(
-              "selectedBook"
-            )
-          );
-        
-          if(book){
+        JSON.parse(
+        localStorage.getItem(
+            "selectedBook"
+        )
+        );
 
-            document.getElementById(
+        if(book){
+
+        document.getElementById(
             "title"
-            ).value =
+        ).value =
             book.title || "";
 
-            document.getElementById(
+        document.getElementById(
             "author"
-            ).value =
+        ).value =
             book.author || "";
 
-            document.getElementById(
+        document.getElementById(
             "isbn"
-            ).value =
+        ).value =
             book.isbn || "";
 
-            document.getElementById(
+        document.getElementById(
             "publish_year"
-            ).value =
+        ).value =
             book.publish_year || "";
 
-            }
+        const preview =
+            document.getElementById(
+            "bookPreview"
+            );
+
+        if(book.cover_url){
+
+            preview.src =
+            book.cover_url;
+
+            preview.style.display =
+            "block";
+
+        }
+
+        }
         
         </script>
 

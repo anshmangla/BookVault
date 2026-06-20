@@ -77,11 +77,26 @@
 
       <div class="input-group">
 
-        <input
-          type="text"
-          class="form-control"
-          placeholder="Search title or author"
-          name="q">
+        <div class="position-relative">
+
+          <input
+            type="text"
+            id="searchInput"
+            class="form-control"
+            placeholder="Search title or author"
+            name="q"
+            autocomplete="off">
+        
+          <div
+            id="searchSuggestions"
+            class="list-group position-absolute w-100"
+            style="
+              z-index:1000;
+              display:none;
+            ">
+          </div>
+        
+        </div>
 
         <button
           class="btn btn-dark">
@@ -217,5 +232,110 @@
   <% }) %>
 
 </div>
+
+<script>
+
+  const searchInput =
+    document.getElementById(
+      "searchInput"
+    );
+  
+  const suggestions =
+    document.getElementById(
+      "searchSuggestions"
+    );
+  
+  searchInput.addEventListener(
+    "input",
+    async () => {
+  
+      const query =
+        searchInput.value.trim();
+  
+      if(query.length < 2){
+  
+        suggestions.style.display =
+          "none";
+  
+        return;
+  
+      }
+  
+      const response =
+        await fetch(
+          `/api/search-books?q=${query}`
+        );
+  
+      const books =
+        await response.json();
+  
+      suggestions.innerHTML = "";
+  
+      if(
+        books.length === 0
+      ){
+  
+        suggestions.style.display =
+          "none";
+  
+        return;
+  
+      }
+  
+      books.forEach(book => {
+  
+        const item =
+          document.createElement(
+            "a"
+          );
+  
+        item.href =
+          `/book/${book.id}`;
+  
+        item.className =
+          "list-group-item list-group-item-action";
+  
+        item.innerHTML =
+          `
+          <strong>
+            ${book.title}
+          </strong>
+          <br>
+          <small>
+            ${book.author || ""}
+          </small>
+          `;
+  
+        suggestions.appendChild(
+          item
+        );
+  
+      });
+  
+      suggestions.style.display =
+        "block";
+  
+    }
+  );
+  
+  document.addEventListener(
+    "click",
+    (e)=>{
+  
+      if(
+        !searchInput.contains(e.target)
+        &&
+        !suggestions.contains(e.target)
+      ){
+  
+        suggestions.style.display =
+          "none";
+  
+      }
+  
+    }
+  );
+  
+  </script>
 
 <%- include("partials/footer") %>

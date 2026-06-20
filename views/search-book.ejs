@@ -1,7 +1,7 @@
 <%- include("partials/header") %>
 
 <h2 class="mb-4">
-  Search Book
+  Search Books
 </h2>
 
 <div class="card p-4 shadow">
@@ -10,109 +10,130 @@
     type="text"
     id="searchInput"
     class="form-control"
-    placeholder="Search books..."
-  >
+    placeholder="Search any book..."
+    autocomplete="off">
 
 </div>
 
 <div
-  class="row mt-4"
-  id="results">
+ id="results"
+ class="row mt-4">
 </div>
 
 <script>
 
-const input =
-  document.getElementById(
-    "searchInput"
-  );
+const searchInput =
+document.getElementById(
+"searchInput"
+);
 
 const results =
-  document.getElementById(
-    "results"
-  );
+document.getElementById(
+"results"
+);
 
-input.addEventListener(
-  "input",
-  async () => {
+let timeout;
 
-    const query =
-      input.value.trim();
+searchInput.addEventListener(
+"input",
+()=>{
 
-    if (query.length < 3) {
+clearTimeout(
+timeout
+);
 
-      results.innerHTML = "";
+timeout =
+setTimeout(
+searchBooks,
+300
+);
 
-      return;
+}
+);
 
-    }
+async function searchBooks(){
 
-    const response =
-      await fetch(
-        `/api/books?q=${query}`
-      );
+const query =
+searchInput.value.trim();
 
-    const books =
-      await response.json();
+if(
+query.length < 2
+){
 
-    results.innerHTML = "";
+results.innerHTML =
+"";
 
-    books.forEach(book => {
+return;
 
-      results.innerHTML +=
-      `
-      <div class="col-md-4 mb-4">
+}
 
-        <div class="card shadow-sm h-100">
+const response =
+await fetch(
+`/api/openlibrary-search?q=${query}`
+);
 
-          <img
-            src="${book.cover_url}"
-            style="
-            height:300px;
-            object-fit:contain;
-            padding:10px;
-            "
-          >
+const books =
+await response.json();
 
-          <div class="card-body">
+results.innerHTML =
+"";
 
-            <h5>
-              ${book.title}
-            </h5>
+books.forEach(book=>{
 
-            <p>
-              ${book.author}
-            </p>
+results.innerHTML +=
 
-            <button
-              class="btn btn-success"
-              onclick='selectBook(${JSON.stringify(book)})'
-            >
+`
+<div class="col-md-4 mb-4">
 
-              Select
+<div class="card shadow h-100">
 
-            </button>
+<img
+src="${book.cover_url}"
+style="
+height:300px;
+object-fit:contain;
+padding:10px;
+">
 
-          </div>
+<div class="card-body">
 
-        </div>
+<h5>
+${book.title}
+</h5>
 
-      </div>
-      `;
+<p>
+${book.author}
+</p>
 
-    });
+<button
+class="btn btn-success"
+onclick='selectBook(${JSON.stringify(book)})'
+>
 
-  });
+Select
+
+</button>
+
+</div>
+
+</div>
+
+</div>
+`;
+
+});
+
+}
 
 function selectBook(book){
 
-  localStorage.setItem(
-    "selectedBook",
-    JSON.stringify(book)
-  );
+localStorage.setItem(
+"selectedBook",
+JSON.stringify(book)
+);
 
-  window.location =
-    "/add";
+window.location =
+"/add";
 
 }
 

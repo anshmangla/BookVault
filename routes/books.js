@@ -182,56 +182,69 @@ router.get("/search-book", (req, res) => {
   res.render("search-book");
 });
 
-router.get("/api/books", async (req, res) => {
+router.get(
+  "/api/openlibrary-search",
+  async (req, res) => {
 
-  try {
+    try {
 
-    const query = req.query.q;
+      const q =
+        req.query.q;
 
-    if (!query) {
-      return res.json([]);
-    }
+      if (
+        !q ||
+        q.length < 2
+      ) {
+        return res.json([]);
+      }
 
-    const response =
-      await axios.get(
-        `https://openlibrary.org/search.json?q=${encodeURIComponent(query)}`
+      const response =
+        await axios.get(
+          `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}`
+        );
+
+      const books =
+        response.data.docs
+          .filter(
+            book =>
+              book.title
+          )
+          .slice(0, 10)
+          .map(book => ({
+
+            title:
+              book.title,
+
+            author:
+              book.author_name?.[0] || "",
+
+            isbn:
+              book.isbn?.[0] || "",
+
+            publish_year:
+              book.first_publish_year || "",
+
+            cover_url:
+              book.cover_i
+                ? `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg`
+                : ""
+
+          }));
+
+      res.json(
+        books
       );
 
-    const books =
-      response.data.docs
-      .filter(book => book.cover_i)
-      .slice(0, 10)
-      .map(book => ({
+    } catch (err) {
 
-        title: book.title,
+      console.error(err);
 
-        author:
-          book.author_name?.[0] || "",
+      res.json([]);
 
-        isbn:
-          book.isbn?.[0] || "",
-
-        publish_year:
-          book.first_publish_year || "",
-
-        cover_url:
-          book.cover_i
-            ? `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg`
-            : ""
-
-      }));
-
-    res.json(books);
-
-  } catch (err) {
-
-    console.error(err);
-
-    res.status(500).json([]);
+    }
 
   }
-
-});
+);
 
 /*
 ====================================
@@ -650,5 +663,62 @@ router.get("/stats", async (req,res)=>{
   }
   
   });
+
+/*
+====================================
+AUTOCOMPLETE SEARCH
+====================================
+*/
+
+router.get(
+  "/api/search-books",
+  async (req, res) => {
+
+    try {
+
+      const q = req.query.q;
+
+      if (!q || q.length < 2) {
+        return res.json([]);
+      }
+
+      const result =
+        await db.query(
+          `
+          SELECT
+            id,
+            title,
+            author
+          FROM books
+          WHERE user_id = $1
+          AND (
+            LOWER(title)
+            LIKE LOWER($2)
+            OR LOWER(author)
+            LIKE LOWER($2)
+          )
+          ORDER BY title
+          LIMIT 10
+          `,
+          [
+            req.session.userId,
+            `%${q}%`
+          ]
+        );
+
+      res.json(
+        result.rows
+      );
+
+    } catch (err) {
+
+      console.error(err);
+
+      res.json([]);
+
+    }
+
+  }
+);
 
 module.exports = router;

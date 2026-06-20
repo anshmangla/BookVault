@@ -114,3 +114,19 @@ body {
 .dark-mode .cover-container {
   border-bottom: 1px solid #444;
 }
+
+#searchSuggestions {
+
+  max-height: 300px;
+
+  overflow-y: auto;
+
+  border-radius: 0 0 8px 8px;
+
+}
+
+#searchSuggestions .list-group-item {
+
+  cursor: pointer;
+
+}
