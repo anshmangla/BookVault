@@ -133,82 +133,88 @@
 
 <% books.forEach(book => { %>
 
-<div class="col-lg-4 col-md-6 mb-4">
-
-<div class="card shadow-sm book-card h-100">
-
-<% if(book.cover_url){ %>
-
-    <div class="cover-container">
-        
-        <img
-        src="<%= book.cover_url %>"
-        class="book-cover"
-        alt="<%= book.title %>"
+  <div class="col-lg-4 col-md-6 mb-4">
+  
+    <div class="card shadow-sm book-card h-100">
+  
+      <a
+        href="/book/<%= book.id %>"
+        style="text-decoration:none;color:inherit;"
+      >
+  
+        <% if(book.cover_url){ %>
+  
+        <div class="cover-container">
+  
+          <img
+            src="<%= book.cover_url %>"
+            class="book-cover"
+            alt="<%= book.title %>"
+          >
+  
+        </div>
+  
+        <% } %>
+  
+        <div class="card-body">
+  
+          <h5>
+            <%= book.title %>
+          </h5>
+  
+          <p class="text-muted">
+            <%= book.author %>
+          </p>
+  
+          <p>
+            ⭐ <%= book.rating || "N/A" %>
+          </p>
+  
+          <div class="review-preview">
+  
+            <p>
+  
+              <%= book.review
+              ? book.review.substring(0,100)
+              : "" %>
+  
+            </p>
+  
+          </div>
+  
+        </div>
+  
+      </a>
+  
+      <div class="card-footer d-flex justify-content-between">
+  
+        <a
+          href="/edit/<%= book.id %>"
+          class="btn btn-warning"
         >
-        
+          Edit
+        </a>
+  
+        <form
+          action="/delete/<%= book.id %>?_method=DELETE"
+          method="POST"
+        >
+  
+          <button
+            class="btn btn-danger"
+          >
+            Delete
+          </button>
+  
+        </form>
+  
+      </div>
+  
     </div>
-        
-<% } %>
-
-<div class="card-body">
-
-<h5>
-  <%= book.title %>
-</h5>
-
-<p class="text-muted">
-  <%= book.author %>
-</p>
-
-<p>
-  ⭐ <%= book.rating || "N/A" %>
-</p>
-
-<div class="review-preview">
-
-<p>
-
-<%= book.review
-? book.review.substring(0,100)
-: "" %>
-
-</p>
-
-</div>
-
-</div>
-
-<div class="card-footer d-flex justify-content-between">
-
-<a
- href="/edit/<%= book.id %>"
- class="btn btn-warning">
-
- Edit
-
-</a>
-
-<form
-action="/delete/<%= book.id %>?_method=DELETE"
-method="POST">
-
-<button
-class="btn btn-danger">
-
-Delete
-
-</button>
-
-</form>
-
-</div>
-
-</div>
-
-</div>
-
-<% }) %>
+  
+  </div>
+  
+  <% }) %>
 
 </div>
 

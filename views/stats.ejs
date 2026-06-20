@@ -1,0 +1,108 @@
+<%- include("partials/header") %>
+
+<h1 class="mb-4">
+ Reading Analytics
+</h1>
+
+<div class="row">
+
+<div class="col-md-4">
+
+<div class="card p-4 shadow">
+
+<h5>
+ Total Books
+</h5>
+
+<h2>
+ <%= totalBooks %>
+</h2>
+
+</div>
+
+</div>
+
+<div class="col-md-4">
+
+<div class="card p-4 shadow">
+
+<h5>
+ Average Rating
+</h5>
+
+<h2>
+ ⭐ <%= avgRating %>
+</h2>
+
+</div>
+
+</div>
+
+<div class="col-md-4">
+
+<div class="card p-4 shadow">
+
+<h5>
+ Books Read This Year
+</h5>
+
+<h2>
+ <%= booksThisYear %>
+</h2>
+
+</div>
+
+</div>
+
+</div>
+
+<canvas
+ id="ratingChart"
+ class="mt-5">
+</canvas>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+const ratings =
+<%- JSON.stringify(
+books.map(
+b=>b.rating
+).filter(Boolean)
+) %>;
+
+const ctx =
+document
+.getElementById(
+"ratingChart"
+);
+
+new Chart(ctx,{
+
+type:"bar",
+
+data:{
+
+labels:
+ratings.map(
+(_,i)=>
+`Book ${i+1}`
+),
+
+datasets:[{
+
+label:
+"Ratings",
+
+data:ratings
+
+}]
+
+}
+
+});
+
+</script>
+
+<%- include("partials/footer") %>

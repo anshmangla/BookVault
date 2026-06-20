@@ -1,4 +1,5 @@
 const express = require("express");
+const passport = require("passport");
 const router = express.Router();
 
 const bcrypt = require("bcrypt");
@@ -126,18 +127,81 @@ router.post("/login", async (req, res) => {
 
 /*
 =========================
+GOOGLE LOGIN
+=========================
+*/
+
+router.get(
+  "/auth/google",
+  
+  passport.authenticate(
+  "google",
+  {
+  scope:[
+  "profile",
+  "email"
+  ]
+  }
+  )
+  
+  );
+
+  router.get(
+
+    "/auth/google/callback",
+    
+    passport.authenticate(
+    "google",
+    {
+    failureRedirect:
+    "/login"
+    }
+    ),
+    
+    (req,res)=>{
+    
+    req.session.userId =
+    req.user.id;
+    
+    req.session.username =
+    req.user.username;
+    
+    res.redirect("/");
+    
+    }
+    
+    );
+
+/*
+=========================
 LOGOUT
 =========================
 */
 
-router.get("/logout", (req, res) => {
-
-  req.session.destroy(() => {
-
-    res.redirect("/login");
-
+router.get(
+  "/logout",
+  (req,res)=>{
+  
+  req.logout(
+  (err)=>{
+  
+  if(err){
+  
+  return next(err);
+  
+  }
+  
+  req.session.destroy(
+  ()=>{
+  
+  res.redirect(
+  "/login"
+  );
+  
+  });
+  
+  });
+  
   });
 
-});
-
-module.exports = router;
+  module.exports = router;

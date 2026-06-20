@@ -1,4 +1,5 @@
 require("dotenv").config();
+const passport = require("./config/passport");
 const express = require("express");
 const methodOverride = require("method-override");
 const session = require("express-session");
@@ -19,6 +20,16 @@ app.use(
   })
  );
 
+ app.use(
+  passport.initialize()
+  );
+
+  // console.log(passport);
+  
+  app.use(
+  passport.session()
+  );
+
  app.use((req, res, next) => {
   res.locals.userId = req.session.userId;
   next();
@@ -28,6 +39,9 @@ app.set("view engine", "ejs");
 
 const authRoutes = require("./routes/auth");
 const bookRoutes = require("./routes/books");
+
+// console.log(authRoutes);
+// console.log(bookRoutes);
 
 app.use("/", authRoutes);
 app.use("/", bookRoutes);

@@ -363,6 +363,56 @@ router.post("/add", async (req, res) => {
 
 /*
 ====================================
+BOOK DETAILS PAGE
+====================================
+*/
+
+router.get("/book/:id", async (req, res) => {
+
+  try {
+
+    const result =
+      await db.query(
+        `
+        SELECT *
+        FROM books
+        WHERE id = $1
+        AND user_id = $2
+        `,
+        [
+          req.params.id,
+          req.session.userId
+        ]
+      );
+
+    if(result.rows.length === 0){
+
+      return res
+      .status(404)
+      .send("Book not found");
+
+    }
+
+    res.render(
+      "book-details",
+      {
+        book: result.rows[0]
+      }
+    );
+
+  } catch(err){
+
+    console.error(err);
+
+    res.status(500)
+    .send("Error");
+
+  }
+
+});
+
+/*
+====================================
 EDIT PAGE
 ====================================
 */
@@ -520,5 +570,85 @@ router.delete("/delete/:id", async (req, res) => {
 
   }
 });
+
+/*
+====================================
+BOOK ANALYTICS
+====================================
+*/
+
+router.get("/stats", async (req,res)=>{
+
+  try{
+  
+  const books =
+  await db.query(
+  `
+  SELECT *
+  FROM books
+  WHERE user_id=$1
+  `,
+  [
+  req.session.userId
+  ]
+  );
+  
+  const rows =
+  books.rows;
+  
+  const totalBooks =
+  rows.length;
+  
+  const avgRating =
+  rows.length
+  ?
+  (
+  rows.reduce(
+  (sum,b)=>
+  sum+(b.rating||0),
+  0
+  )
+  /
+  rows.length
+  ).toFixed(1)
+  :
+  0;
+  
+  const booksThisYear =
+  rows.filter(book=>{
+  
+  if(!book.date_read)
+  return false;
+  
+  return (
+  new Date(
+  book.date_read
+  ).getFullYear()
+  ===
+  new Date()
+  .getFullYear()
+  );
+  
+  }).length;
+  
+  res.render(
+  "stats",
+  {
+  totalBooks,
+  avgRating,
+  booksThisYear,
+  books:rows
+  }
+  );
+  
+  }catch(err){
+  
+  console.error(err);
+  
+  res.send("Error");
+  
+  }
+  
+  });
 
 module.exports = router;
