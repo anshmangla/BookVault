@@ -1,51 +1,57 @@
 <%- include("partials/header") %>
 
-<h2 class="mb-4">
-  Search Books
-</h2>
+<div class="container mt-5">
 
-<div class="card p-4 shadow">
+  <h2>Add New Book</h2>
 
-  <input
-    type="text"
-    id="searchInput"
-    class="form-control"
-    placeholder="Search any book..."
-    autocomplete="off">
+  <div class="position-relative">
 
-</div>
+    <input
+      type="text"
+      id="bookSearch"
+      class="form-control"
+      placeholder="Search any book..."
+      autocomplete="off">
 
-<div
- id="results"
- class="row mt-4">
+    <div
+      id="suggestions"
+      class="list-group position-absolute w-100"
+      style="
+        z-index:1000;
+        display:none;
+      ">
+    </div>
+
+  </div>
+
 </div>
 
 <script>
 
-const searchInput =
+const input =
 document.getElementById(
-"searchInput"
+"bookSearch"
 );
 
-const results =
+const suggestions =
 document.getElementById(
-"results"
+"suggestions"
 );
 
-let timeout;
+let debounce;
 
-searchInput.addEventListener(
+input.addEventListener(
 "input",
 ()=>{
 
 clearTimeout(
-timeout
+debounce
 );
 
-timeout =
+debounce =
 setTimeout(
 searchBooks,
-300
+400
 );
 
 }
@@ -54,14 +60,14 @@ searchBooks,
 async function searchBooks(){
 
 const query =
-searchInput.value.trim();
+input.value.trim();
 
 if(
-query.length < 2
+query.length < 3
 ){
 
-results.innerHTML =
-"";
+suggestions.style.display =
+"none";
 
 return;
 
@@ -69,63 +75,50 @@ return;
 
 const response =
 await fetch(
-`/api/openlibrary-search?q=${query}`
+`/api/openlibrary-search?q=${encodeURIComponent(query)}`
 );
 
 const books =
 await response.json();
 
-results.innerHTML =
+suggestions.innerHTML =
 "";
 
-books.forEach(book=>{
+if(
+books.length === 0
+){
 
-results.innerHTML +=
+suggestions.style.display =
+"none";
 
-`
-<div class="col-md-4 mb-4">
-
-<div class="card shadow h-100">
-
-<img
-src="${book.cover_url}"
-style="
-height:300px;
-object-fit:contain;
-padding:10px;
-">
-
-<div class="card-body">
-
-<h5>
-${book.title}
-</h5>
-
-<p>
-${book.author}
-</p>
-
-<button
-class="btn btn-success"
-onclick='selectBook(${JSON.stringify(book)})'
->
-
-Select
-
-</button>
-
-</div>
-
-</div>
-
-</div>
-`;
-
-});
+return;
 
 }
 
-function selectBook(book){
+books.forEach(book=>{
+
+const item =
+document.createElement(
+"a"
+);
+
+item.href="#";
+
+item.className =
+"list-group-item list-group-item-action";
+
+item.innerHTML =
+`
+<strong>
+${book.title}
+</strong>
+<br>
+<small>
+${book.author}
+</small>
+`;
+
+item.onclick = ()=>{
 
 localStorage.setItem(
 "selectedBook",
@@ -134,6 +127,17 @@ JSON.stringify(book)
 
 window.location =
 "/add";
+
+};
+
+suggestions.appendChild(
+item
+);
+
+});
+
+suggestions.style.display =
+"block";
 
 }
 

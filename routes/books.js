@@ -184,67 +184,68 @@ router.get("/search-book", (req, res) => {
 
 router.get(
   "/api/openlibrary-search",
-  async (req, res) => {
-
-    try {
-
-      const q =
-        req.query.q;
-
-      if (
-        !q ||
-        q.length < 2
-      ) {
-        return res.json([]);
-      }
-
-      const response =
-        await axios.get(
-          `https://openlibrary.org/search.json?q=${encodeURIComponent(q)}`
-        );
-
-      const books =
-        response.data.docs
-          .filter(
-            book =>
-              book.title
-          )
-          .slice(0, 10)
-          .map(book => ({
-
-            title:
-              book.title,
-
-            author:
-              book.author_name?.[0] || "",
-
-            isbn:
-              book.isbn?.[0] || "",
-
-            publish_year:
-              book.first_publish_year || "",
-
-            cover_url:
-              book.cover_i
-                ? `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg`
-                : ""
-
-          }));
-
-      res.json(
-        books
-      );
-
-    } catch (err) {
-
-      console.error(err);
-
-      res.json([]);
-
-    }
-
+  async (req,res)=>{
+  
+  try{
+  
+  const q =
+  req.query.q;
+  
+  if(
+  !q ||
+  q.length < 3
+  ){
+  
+  return res.json([]);
+  
   }
-);
+  
+  const response =
+  await axios.get(
+  `https://openlibrary.org/search.json?title=${encodeURIComponent(q)}`
+  );
+  
+  const books =
+  response.data.docs
+  .filter(
+  book =>
+  book.cover_i &&
+  book.author_name
+  )
+  .slice(0,10)
+  .map(book=>({
+  
+  title:
+  book.title,
+  
+  author:
+  book.author_name[0],
+  
+  isbn:
+  book.isbn?.[0] || "",
+  
+  publish_year:
+  book.first_publish_year || "",
+  
+  cover_url:
+  `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg`
+  
+  }));
+  
+  res.json(
+  books
+  );
+  
+  }catch(err){
+  
+  console.error(err);
+  
+  res.json([]);
+  
+  }
+  
+  }
+  );
 
 /*
 ====================================
