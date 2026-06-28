@@ -13,7 +13,10 @@ REGISTER PAGE
 
 router.get("/register", (req, res) => {
   res.render("register", {
-    pageTitle: "Create Account"
+    pageTitle: "Create Account",
+    error: null,
+    username: "",
+    email: ""
   });
 });
 
@@ -30,6 +33,15 @@ router.post("/register", async (req, res, next) => {
       email,
       password
     } = req.body;
+
+    if (!password || password.length < 8) {
+      return res.status(400).render("register", {
+        pageTitle: "Create Account",
+        error: "Password must be at least 8 characters long.",
+        username,
+        email
+      });
+    }
 
     const hashedPassword =
       await bcrypt.hash(password, 10);
@@ -50,6 +62,14 @@ router.post("/register", async (req, res, next) => {
     res.redirect("/login");
 
   } catch (err) {
+    if (err.code === "23505") { // unique_violation
+      return res.status(400).render("register", {
+        pageTitle: "Create Account",
+        error: "An account with that email already exists.",
+        username,
+        email
+      });
+    }
     next(err);
   }
 });
@@ -62,7 +82,9 @@ LOGIN PAGE
 
 router.get("/login", (req, res) => {
   res.render("login", {
-    pageTitle: "Log In"
+    pageTitle: "Log In",
+    error: null,
+    email: ""
   });
 });
 
@@ -96,8 +118,8 @@ router.post("/login", async (req, res, next) => {
         "login",
         {
           pageTitle: "Log In",
-          error:
-            "The email or password is incorrect."
+          error: "The email or password is incorrect.",
+          email
         }
       );
     }
@@ -116,8 +138,8 @@ router.post("/login", async (req, res, next) => {
         "login",
         {
           pageTitle: "Log In",
-          error:
-            "The email or password is incorrect."
+          error: "The email or password is incorrect.",
+          email
         }
       );
     }
@@ -132,7 +154,6 @@ router.post("/login", async (req, res, next) => {
 
   } catch (err) {
     next(err);
-
   }
 
 });
@@ -145,44 +166,31 @@ GOOGLE LOGIN
 
 router.get(
   "/auth/google",
-  
   passport.authenticate(
-  "google",
-  {
-  scope:[
-  "profile",
-  "email"
-  ]
-  }
-  )
-  
-  );
-
-  router.get(
-
-    "/auth/google/callback",
-    
-    passport.authenticate(
     "google",
     {
-    failureRedirect:
-    "/login"
+      scope: [
+        "profile",
+        "email"
+      ]
     }
-    ),
-    
-    (req,res)=>{
-    
-    req.session.userId =
-    req.user.id;
-    
-    req.session.userName =
-    req.user.username;
-    
+  )
+);
+
+router.get(
+  "/auth/google/callback",
+  passport.authenticate(
+    "google",
+    {
+      failureRedirect: "/login"
+    }
+  ),
+  (req, res) => {
+    req.session.userId = req.user.id;
+    req.session.userName = req.user.username;
     res.redirect("/");
-    
-    }
-    
-    );
+  }
+);
 
 /*
 =========================
@@ -192,28 +200,16 @@ LOGOUT
 
 router.get(
   "/logout",
-  (req,res,next)=>{
-  
-  req.logout(
-  (err)=>{
-  
-  if(err){
-  
-  return next(err);
-  
+  (req, res, next) => {
+    req.logout((err) => {
+      if (err) {
+        return next(err);
+      }
+      req.session.destroy(() => {
+        res.redirect("/login");
+      });
+    });
   }
-  
-  req.session.destroy(
-  ()=>{
-  
-  res.redirect(
-  "/login"
-  );
-  
-  });
-  
-  });
-  
-  });
+);
 
-  module.exports = router;
+module.exports = router;

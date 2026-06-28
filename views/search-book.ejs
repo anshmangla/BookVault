@@ -299,6 +299,7 @@
   let nextStartIndex = 0;
   let totalItems = 0;
   let renderedBooks = 0;
+  let currentAbortController = null;
 
   function renderIcons() {
     if (typeof lucide !== "undefined") {
@@ -432,6 +433,12 @@
       cover.loading = "lazy";
       cover.className =
         "google-book-result-cover";
+      cover.onerror = function() {
+        this.onerror = null;
+        this.className = "google-book-result-cover google-book-result-placeholder";
+        this.alt = "No cover";
+        this.removeAttribute("src");
+      };
     } else {
       cover.className =
         "google-book-result-cover google-book-result-placeholder";
@@ -582,6 +589,11 @@
 
     showLoading(append);
 
+    if (currentAbortController) {
+      currentAbortController.abort();
+    }
+    currentAbortController = new AbortController();
+
     try {
       const params =
         new URLSearchParams({
@@ -594,7 +606,8 @@
 
       const response =
         await fetch(
-          `/api/google-books/search?${params}`
+          `/api/google-books/search?${params}`,
+          { signal: currentAbortController.signal }
         );
       const result =
         await response.json();
@@ -630,6 +643,10 @@
         append
       );
     } catch (error) {
+      if (error.name === "AbortError") {
+        return; // Request was intentionally cancelled
+      }
+
       if (!append) {
         showMessage(
           error.message ||

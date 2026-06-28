@@ -43,3 +43,15 @@
     transform:scale(1.03);
     
     }
+    
+    @media (prefers-reduced-motion: reduce) {
+      .fade-up {
+        animation: none;
+      }
+      .hover-scale {
+        transition: none;
+      }
+      .hover-scale:hover {
+        transform: none;
+      }
+    }

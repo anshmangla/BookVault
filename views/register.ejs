@@ -13,11 +13,19 @@
       <p>Keep your books, notes, reviews, and reading history together.</p>
     </header>
 
+    <% if (typeof error !== "undefined" && error) { %>
+      <%- include("partials/alert", {
+        alertType: "danger",
+        alertMessage: error
+      }) %>
+    <% } %>
+
     <form action="/register" method="POST">
 
       <%- include("partials/form-field", {
         label: "Username",
         name: "username",
+        value: typeof username !== "undefined" ? username : "",
         autocomplete: "username",
         fieldRequired: true
       }) %>
@@ -26,6 +34,7 @@
         label: "Email",
         name: "email",
         type: "email",
+        value: typeof email !== "undefined" ? email : "",
         autocomplete: "email",
         fieldRequired: true
       }) %>
@@ -35,7 +44,7 @@
         name: "password",
         type: "password",
         autocomplete: "new-password",
-        helpText: "Use a password you do not reuse on other websites.",
+        helpText: "Must be at least 8 characters long. Use a password you do not reuse on other websites.",
         fieldRequired: true
       }) %>
 

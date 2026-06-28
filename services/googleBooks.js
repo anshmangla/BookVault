@@ -132,6 +132,24 @@ function buildSearchQuery(query, searchBy) {
   }
 }
 
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const apiCache = new Map();
+
+function getCached(key) {
+  const cached = apiCache.get(key);
+  if (cached && Date.now() - cached.timestamp < CACHE_TTL) {
+    return cached.data;
+  }
+  if (cached) {
+    apiCache.delete(key);
+  }
+  return null;
+}
+
+function setCache(key, data) {
+  apiCache.set(key, { data, timestamp: Date.now() });
+}
+
 async function searchVolumes(
   query,
   {
@@ -179,6 +197,12 @@ async function searchVolumes(
       )
     );
 
+  const cacheKey = `search:${cleanQuery}:${searchBy}:${safeStartIndex}:${safeMaxResults}`;
+  const cachedData = getCached(cacheKey);
+  if (cachedData) {
+    return cachedData;
+  }
+
   const response = await axios.get(
     `${GOOGLE_BOOKS_BASE_URL}/volumes`,
     {
@@ -203,12 +227,15 @@ async function searchVolumes(
       ? response.data.items
       : [];
 
-  return {
+  const result = {
     books: items.map(normalizeVolume),
     totalItems:
       Number(response.data.totalItems) || 0,
     startIndex: safeStartIndex
   };
+
+  setCache(cacheKey, result);
+  return result;
 }
 
 async function getVolume(volumeId) {
@@ -217,6 +244,12 @@ async function getVolume(volumeId) {
 
   if (!cleanVolumeId) {
     return null;
+  }
+
+  const cacheKey = `volume:${cleanVolumeId}`;
+  const cachedData = getCached(cacheKey);
+  if (cachedData) {
+    return cachedData;
   }
 
   const response = await axios.get(
@@ -229,7 +262,9 @@ async function getVolume(volumeId) {
     }
   );
 
-  return normalizeVolume(response.data);
+  const result = normalizeVolume(response.data);
+  setCache(cacheKey, result);
+  return result;
 }
 
 module.exports = {

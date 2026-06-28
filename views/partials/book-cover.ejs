@@ -14,7 +14,12 @@
     <img
       src="<%= book.cover_url %>"
       alt="<%= coverTitle %> cover"
-      loading="<%= typeof eager !== "undefined" && eager ? "eager" : "lazy" %>">
+      loading="<%= typeof eager !== "undefined" && eager ? "eager" : "lazy" %>"
+      onerror="this.onerror=null; this.style.display='none'; this.nextElementSibling.style.display='flex';">
+    <div class="book-cover-placeholder" style="display: none;">
+      <i data-lucide="book-open" aria-hidden="true"></i>
+      <span>No cover available</span>
+    </div>
   <% } else { %>
     <div class="book-cover-placeholder">
       <i data-lucide="book-open" aria-hidden="true"></i>
