@@ -6,45 +6,19 @@ const {
   getVolume,
   searchVolumes
 } = require("../services/googleBooks");
+const {
+  buildLibraryWhere,
+  normalizeLibraryQuery,
+  sortOrder
+} = require("../services/libraryQuery");
+const {
+  buildAnalytics
+} = require("../services/analytics");
 
 const isAuthenticated =
   require("../middleware/auth");
 
-function calculateLibraryStats(books) {
-  const ratedBooks =
-    books.filter(
-      book =>
-        book.rating !== null &&
-        book.rating !== undefined
-    );
-
-  const avgRating =
-    ratedBooks.length > 0
-      ? (
-          ratedBooks.reduce(
-            (sum, book) =>
-              sum + Number(book.rating),
-            0
-          ) / ratedBooks.length
-        ).toFixed(1)
-      : 0;
-
-  const topBook =
-    ratedBooks.length > 0
-      ? ratedBooks.reduce((top, book) =>
-          Number(book.rating) >
-          Number(top.rating)
-            ? book
-            : top
-        )
-      : null;
-
-  return {
-    totalBooks: books.length,
-    avgRating,
-    topBook
-  };
-}
+const LIBRARY_PAGE_SIZE = 12;
 
 async function addDuplicateInfo(
   books,
@@ -73,6 +47,7 @@ async function addDuplicateInfo(
       isbn
     FROM books
     WHERE user_id = $1
+    AND deleted_at IS NULL
     AND (
       google_volume_id = ANY($2::text[])
       OR isbn = ANY($3::text[])
@@ -115,54 +90,147 @@ HOME PAGE
 
 router.get("/", isAuthenticated, async (req, res, next) => {
   try {
-
-    const sort = req.query.sort;
-
-    let query = `
-      SELECT *
-      FROM books
-      WHERE user_id = $1
-      ORDER BY created_at DESC
-    `;
-
-    if (sort === "rating") {
-      query = `
-        SELECT *
-        FROM books
-        WHERE user_id = $1
-        ORDER BY rating DESC NULLS LAST
-      `;
-    }
-
-    if (sort === "recent") {
-      query = `
-        SELECT *
-        FROM books
-        WHERE user_id = $1
-        ORDER BY date_read DESC NULLS LAST
-      `;
-    }
-
-    const result =
-      await db.query(
-        query,
-        [req.session.userId]
-      );
-
-    const books = result.rows;
+    const filters =
+      normalizeLibraryQuery(req.query);
 
     const {
-      totalBooks,
-      avgRating,
-      topBook
-    } = calculateLibraryStats(books);
+      whereClause,
+      values
+    } = buildLibraryWhere(
+      req.session.userId,
+      filters
+    );
+
+    const [
+      countResult,
+      statsResult,
+      topBookResult,
+      yearsResult
+    ] = await Promise.all([
+      db.query(
+        `
+        SELECT COUNT(*)::int AS count
+        FROM books
+        WHERE ${whereClause}
+        `,
+        values
+      ),
+      db.query(
+        `
+        SELECT
+          COUNT(*)::int AS total_books,
+          AVG(rating) AS avg_rating
+        FROM books
+        WHERE user_id = $1
+        AND deleted_at IS NULL
+        `,
+        [req.session.userId]
+      ),
+      db.query(
+        `
+        SELECT *
+        FROM books
+        WHERE user_id = $1
+        AND deleted_at IS NULL
+        AND rating IS NOT NULL
+        ORDER BY rating DESC, created_at DESC
+        LIMIT 1
+        `,
+        [req.session.userId]
+      ),
+      db.query(
+        `
+        SELECT DISTINCT
+          EXTRACT(YEAR FROM date_read)::int AS year
+        FROM books
+        WHERE user_id = $1
+        AND deleted_at IS NULL
+        AND date_read IS NOT NULL
+        ORDER BY year DESC
+        `,
+        [req.session.userId]
+      )
+    ]);
+
+    const totalResults =
+      Number(countResult.rows[0].count);
+
+    const totalPages =
+      Math.max(
+        1,
+        Math.ceil(
+          totalResults /
+          LIBRARY_PAGE_SIZE
+        )
+      );
+
+    const currentPage =
+      Math.min(
+        filters.page,
+        totalPages
+      );
+
+    const limitPlaceholder =
+      values.length + 1;
+    const offsetPlaceholder =
+      values.length + 2;
+
+    const booksResult =
+      await db.query(
+        `
+        SELECT *
+        FROM books
+        WHERE ${whereClause}
+        ORDER BY ${sortOrder(filters.sort)}
+        LIMIT $${limitPlaceholder}
+        OFFSET $${offsetPlaceholder}
+        `,
+        [
+          ...values,
+          LIBRARY_PAGE_SIZE,
+          (
+            currentPage - 1
+          ) * LIBRARY_PAGE_SIZE
+        ]
+      );
+
+    const books = booksResult.rows;
+    const totalBooks =
+      Number(
+        statsResult.rows[0].total_books
+      );
+    const avgRating =
+      statsResult.rows[0].avg_rating
+        ? Number(
+            statsResult.rows[0].avg_rating
+          ).toFixed(1)
+        : 0;
+    const topBook =
+      topBookResult.rows[0] || null;
+    const availableYears =
+      yearsResult.rows.map(
+        row => row.year
+      );
 
     res.render("index", {
-      pageTitle: "My Library",
+      pageTitle: filters.q
+        ? `Search: ${filters.q}`
+        : "My Library",
       books,
       totalBooks,
       avgRating,
-      topBook
+      topBook,
+      totalResults,
+      availableYears,
+      filters: {
+        ...filters,
+        page: currentPage
+      },
+      pagination: {
+        currentPage,
+        totalPages,
+        pageSize: LIBRARY_PAGE_SIZE
+      }
     });
 
   } catch (err) {
@@ -178,55 +246,16 @@ SEARCH BOOKS
 */
 
 router.get("/search", isAuthenticated, async (req, res, next) => {
-  try {
+  const searchTerm =
+    String(req.query.q || "").trim();
 
-    const searchTerm =
-      req.query.q;
-      if (!searchTerm) {
-        return res.redirect("/");
-      }
-
-    const result =
-      await db.query(
-        `
-        SELECT *
-        FROM books
-        WHERE user_id = $1
-        AND (
-          LOWER(title) LIKE LOWER($2)
-          OR LOWER(author) LIKE LOWER($2)
-        )
-        ORDER BY created_at DESC
-        `,
-        [
-          req.session.userId,
-          `%${searchTerm}%`
-        ]
-      );
-
-    const books =
-      result.rows;
-
-    const {
-      totalBooks,
-      avgRating,
-      topBook
-    } = calculateLibraryStats(books);
-
-    res.render("index", {
-      pageTitle: searchTerm
-        ? `Search: ${searchTerm}`
-        : "My Library",
-      books,
-      totalBooks,
-      avgRating,
-      topBook
-    });
-
-  } catch (err) {
-    next(err);
-
+  if (!searchTerm) {
+    return res.redirect("/");
   }
+
+  res.redirect(
+    `/?q=${encodeURIComponent(searchTerm)}`
+  );
 });
 
 router.get("/search-book", isAuthenticated, (req, res) => {
@@ -379,6 +408,7 @@ router.post("/add", isAuthenticated, async (req, res, next) => {
           SELECT id
           FROM books
           WHERE user_id = $1
+          AND deleted_at IS NULL
           AND (
             (
               $2::text IS NOT NULL
@@ -516,6 +546,7 @@ router.get("/book/:id", isAuthenticated, async (req, res, next) => {
         FROM books
         WHERE id = $1
         AND user_id = $2
+        AND deleted_at IS NULL
         `,
         [
           req.params.id,
@@ -566,6 +597,7 @@ router.get("/edit/:id", isAuthenticated, async (req, res, next) => {
         FROM books
         WHERE id = $1
         AND user_id = $2
+        AND deleted_at IS NULL
         `,
         [
           req.params.id,
@@ -619,6 +651,24 @@ router.put("/edit/:id", isAuthenticated, async (req, res, next) => {
       date_read
     } = req.body;
 
+    const cleanTitle =
+      String(title || "").trim();
+    const cleanAuthor =
+      String(author || "").trim();
+    const cleanIsbn =
+      String(isbn || "").trim();
+
+    if (!cleanTitle) {
+      return res.status(400).render(
+        "error",
+        {
+          pageTitle: "Title Required",
+          message:
+            "A title is required before a book can be updated."
+        }
+      );
+    }
+
     if (
       rating &&
       (rating < 1 || rating > 10)
@@ -632,7 +682,7 @@ router.put("/edit/:id", isAuthenticated, async (req, res, next) => {
 
     }
 
-    await db.query(
+    const result = await db.query(
       `
       UPDATE books
       SET
@@ -646,11 +696,13 @@ router.put("/edit/:id", isAuthenticated, async (req, res, next) => {
         date_read = $8
       WHERE id = $9
       AND user_id = $10
+      AND deleted_at IS NULL
+      RETURNING id
       `,
       [
-        title,
-        author,
-        isbn,
+        cleanTitle,
+        cleanAuthor,
+        cleanIsbn,
         publish_year || null,
         rating || null,
         notes,
@@ -661,7 +713,24 @@ router.put("/edit/:id", isAuthenticated, async (req, res, next) => {
       ]
     );
 
-    res.redirect("/");
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .render("404", {
+          pageTitle: "Book Not Found",
+          message:
+            "That book could not be found in your library."
+        });
+    }
+
+    req.session.notice = {
+      type: "success",
+      title: "Book updated",
+      message:
+        `Your changes to “${cleanTitle}” were saved.`
+    };
+
+    res.redirect(`/book/${req.params.id}`);
 
   } catch (err) {
     next(err);
@@ -679,17 +748,38 @@ router.delete("/delete/:id", isAuthenticated, async (req, res, next) => {
 
   try {
 
-    await db.query(
+    const result = await db.query(
       `
-      DELETE FROM books
+      UPDATE books
+      SET deleted_at = CURRENT_TIMESTAMP
       WHERE id = $1
       AND user_id = $2
+      AND deleted_at IS NULL
+      RETURNING id, title
       `,
       [
         req.params.id,
         req.session.userId
       ]
     );
+
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .render("404", {
+          pageTitle: "Book Not Found",
+          message:
+            "That book could not be found in your library."
+        });
+    }
+
+    req.session.notice = {
+      type: "info",
+      title: "Book removed",
+      message:
+        `“${result.rows[0].title}” was removed from your library.`,
+      undoBookId: result.rows[0].id
+    };
 
     res.redirect("/");
 
@@ -699,71 +789,157 @@ router.delete("/delete/:id", isAuthenticated, async (req, res, next) => {
   }
 });
 
+router.post("/book/:id/undo", isAuthenticated, async (req, res, next) => {
+  try {
+    const result =
+      await db.query(
+        `
+        UPDATE books
+        SET deleted_at = NULL
+        WHERE id = $1
+        AND user_id = $2
+        AND deleted_at IS NOT NULL
+        RETURNING id, title
+        `,
+        [
+          req.params.id,
+          req.session.userId
+        ]
+      );
+
+    if (result.rows.length === 0) {
+      return res
+        .status(404)
+        .render("404", {
+          pageTitle: "Book Not Found",
+          message:
+            "That deleted book could not be restored."
+        });
+    }
+
+    req.session.notice = {
+      type: "success",
+      title: "Book restored",
+      message:
+        `“${result.rows[0].title}” is back in your library.`
+    };
+
+    res.redirect(`/book/${result.rows[0].id}`);
+  } catch (err) {
+    next(err);
+  }
+});
+
 /*
 ====================================
 BOOK ANALYTICS
 ====================================
 */
 
-router.get("/stats", isAuthenticated, async (req,res,next)=>{
+router.get("/stats", isAuthenticated, async (req, res, next) => {
+  try {
+    const currentYear =
+      new Date().getFullYear();
 
-  try{
-  
-  const books =
-  await db.query(
-  `
-  SELECT *
-  FROM books
-  WHERE user_id=$1
-  `,
-  [
-  req.session.userId
-  ]
-  );
-  
-  const rows =
-  books.rows;
-  
-  const totalBooks =
-  rows.length;
-  
-  const { avgRating } =
-  calculateLibraryStats(rows);
-  
-  const booksThisYear =
-  rows.filter(book=>{
-  
-  if(!book.date_read)
-  return false;
-  
-  return (
-  new Date(
-  book.date_read
-  ).getFullYear()
-  ===
-  new Date()
-  .getFullYear()
-  );
-  
-  }).length;
-  
-  res.render(
-  "stats",
-  {
-  pageTitle: "Reading Analytics",
-  totalBooks,
-  avgRating,
-  booksThisYear,
-  books:rows
+    const [
+      booksResult,
+      userResult
+    ] = await Promise.all([
+      db.query(
+        `
+        SELECT
+          id,
+          title,
+          author,
+          rating,
+          date_read,
+          cover_url
+        FROM books
+        WHERE user_id = $1
+        AND deleted_at IS NULL
+        `,
+        [req.session.userId]
+      ),
+      db.query(
+        `
+        SELECT reading_goal
+        FROM users
+        WHERE id = $1
+        `,
+        [req.session.userId]
+      )
+    ]);
+
+    const analytics =
+      buildAnalytics(
+        booksResult.rows,
+        {
+          year: currentYear,
+          readingGoal:
+            userResult.rows[0]?.reading_goal
+        }
+      );
+
+    res.render("stats", {
+      pageTitle: "Reading Analytics",
+      analytics
+    });
+  } catch (err) {
+    next(err);
   }
-  );
-  
-  }catch(err){
-  next(err);
-  
+});
+
+router.post(
+  "/stats/goal",
+  isAuthenticated,
+  async (req, res, next) => {
+    try {
+      const readingGoal =
+        Number.parseInt(
+          req.body.reading_goal,
+          10
+        );
+
+      if (
+        !Number.isInteger(readingGoal) ||
+        readingGoal < 1 ||
+        readingGoal > 1000
+      ) {
+        req.session.notice = {
+          type: "info",
+          title: "Goal not changed",
+          message:
+            "Choose a reading goal between 1 and 1,000 books."
+        };
+
+        return res.redirect("/stats");
+      }
+
+      await db.query(
+        `
+        UPDATE users
+        SET reading_goal = $1
+        WHERE id = $2
+        `,
+        [
+          readingGoal,
+          req.session.userId
+        ]
+      );
+
+      req.session.notice = {
+        type: "success",
+        title: "Reading goal updated",
+        message:
+          `Your ${new Date().getFullYear()} goal is ${readingGoal} books.`
+      };
+
+      res.redirect("/stats");
+    } catch (err) {
+      next(err);
+    }
   }
-  
-  });
+);
 
 /*
 ====================================
@@ -778,7 +954,10 @@ router.get(
 
     try {
 
-      const q = req.query.q;
+      const q =
+        String(req.query.q || "")
+          .trim()
+          .slice(0, 120);
 
       if (!q || q.length < 2) {
         return res.json([]);
@@ -790,14 +969,15 @@ router.get(
           SELECT
             id,
             title,
-            author
+            author,
+            isbn
           FROM books
           WHERE user_id = $1
+          AND deleted_at IS NULL
           AND (
-            LOWER(title)
-            LIKE LOWER($2)
-            OR LOWER(author)
-            LIKE LOWER($2)
+            title ILIKE $2
+            OR author ILIKE $2
+            OR isbn ILIKE $2
           )
           ORDER BY title
           LIMIT 10

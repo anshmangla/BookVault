@@ -1,0 +1,36 @@
+<% if (typeof notice !== "undefined" && notice) { %>
+  <aside
+    class="action-toast surface-card"
+    role="status"
+    aria-live="polite"
+    aria-atomic="true">
+    <div class="action-toast-icon" aria-hidden="true">
+      <i data-lucide="<%= notice.type === "success" ? "circle-check" : "info" %>"></i>
+    </div>
+
+    <div class="action-toast-copy">
+      <strong><%= notice.title %></strong>
+      <% if (notice.message) { %>
+        <span><%= notice.message %></span>
+      <% } %>
+    </div>
+
+    <% if (notice.undoBookId) { %>
+      <form
+        action="/book/<%= notice.undoBookId %>/undo"
+        method="POST">
+        <button class="btn btn-ghost action-toast-undo" type="submit">
+          Undo
+        </button>
+      </form>
+    <% } %>
+
+    <button
+      class="action-toast-close"
+      type="button"
+      aria-label="Dismiss notification"
+      onclick="this.closest('.action-toast').remove()">
+      <i data-lucide="x" aria-hidden="true"></i>
+    </button>
+  </aside>
+<% } %>

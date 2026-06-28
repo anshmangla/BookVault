@@ -1,16 +1,46 @@
+<%
+  function formatReadDate(parts) {
+    if (!parts) {
+      return "";
+    }
+
+    return new Date(
+      parts.year,
+      parts.month,
+      parts.day
+    ).toLocaleDateString(
+      undefined,
+      {
+        day: "numeric",
+        month: "short",
+        year: "numeric"
+      }
+    );
+  }
+
+  const activeRatingBuckets =
+    analytics.ratingDistribution
+      .filter(bucket => bucket.count > 0);
+  const activeMonths =
+    analytics.booksByMonth
+      .filter(month => month.count > 0);
+%>
+
 <%- include("partials/header") %>
 
-<main class="page-shell">
+<main class="page-shell analytics-page">
 
   <%- include("partials/page-header", {
     eyebrow: "Insights",
     icon: "chart-column",
     title: "Reading analytics",
-    description: "A quick snapshot of your library and reading activity.",
+    description: `Your reading patterns and progress for ${analytics.year}.`,
     actionHref: "/search-book",
     actionLabel: "Add Book",
     actionIcon: "plus"
   }) %>
+
+  <%- include("partials/action-toast") %>
 
   <section class="analytics-summary" aria-label="Reading summary">
 
@@ -19,8 +49,8 @@
         <i data-lucide="library-big"></i>
       </span>
       <div>
-        <p>Total Books</p>
-        <strong><%= totalBooks %></strong>
+        <p>Total books</p>
+        <strong><%= analytics.totalBooks %></strong>
       </div>
     </article>
 
@@ -29,8 +59,17 @@
         <i data-lucide="star"></i>
       </span>
       <div>
-        <p>Average Rating</p>
-        <strong><%= avgRating %></strong>
+        <p>Average rating</p>
+        <strong>
+          <%= analytics.averageRating
+            ? `${analytics.averageRating}/10`
+            : "—" %>
+        </strong>
+        <small>
+          <%= analytics.ratedCount
+            ? `${analytics.ratedCount} rated`
+            : "No ratings yet" %>
+        </small>
       </div>
     </article>
 
@@ -39,38 +78,285 @@
         <i data-lucide="calendar-check"></i>
       </span>
       <div>
-        <p>Read This Year</p>
-        <strong><%= booksThisYear %></strong>
+        <p>Read in <%= analytics.year %></p>
+        <strong><%= analytics.booksThisYear %></strong>
+      </div>
+    </article>
+
+    <article class="surface-card analytics-card">
+      <span class="analytics-card-icon" aria-hidden="true">
+        <i data-lucide="target"></i>
+      </span>
+      <div>
+        <p>Goal progress</p>
+        <strong><%= analytics.goal.percent %>%</strong>
+        <small>
+          <%= analytics.goal.current %> of
+          <%= analytics.goal.target %> books
+        </small>
       </div>
     </article>
 
   </section>
 
-  <% if (books.some(book => book.rating)) { %>
-
-    <section class="surface-card analytics-chart" aria-labelledby="ratings-heading">
-      <div class="analytics-chart-header">
-        <h2 id="ratings-heading">Book ratings</h2>
-        <p>Your ratings across the library.</p>
-      </div>
-
-      <div class="analytics-chart-canvas">
-        <canvas id="ratingChart">
-          A chart showing your book ratings.
-        </canvas>
-      </div>
-    </section>
-
-  <% } else { %>
+  <% if (analytics.totalBooks === 0) { %>
 
     <%- include("partials/empty-state", {
       icon: "chart-no-axes-column",
-      title: "No rating data yet",
-      description: "Rate a book to start building your reading insights.",
-      actionHref: "/",
-      actionLabel: "View Library",
-      actionIcon: "library-big"
+      title: "Your insights will grow with your library",
+      description: "Add a book, then record ratings and reading dates to see patterns here.",
+      actionHref: "/search-book",
+      actionLabel: "Add Your First Book",
+      actionIcon: "plus"
     }) %>
+
+  <% } else { %>
+
+    <section class="surface-card reading-goal-card" aria-labelledby="reading-goal-heading">
+      <div class="reading-goal-copy">
+        <span class="analytics-section-icon" aria-hidden="true">
+          <i data-lucide="goal"></i>
+        </span>
+        <div>
+          <h2 id="reading-goal-heading"><%= analytics.year %> reading goal</h2>
+          <p>
+            <strong><%= analytics.goal.current %></strong>
+            of <strong><%= analytics.goal.target %></strong>
+            books completed
+          </p>
+        </div>
+      </div>
+
+      <div
+        class="goal-progress"
+        role="progressbar"
+        aria-label="<%= analytics.year %> reading goal"
+        aria-valuemin="0"
+        aria-valuemax="<%= analytics.goal.target %>"
+        aria-valuenow="<%= Math.min(analytics.goal.current, analytics.goal.target) %>"
+        aria-valuetext="<%= analytics.goal.current %> of <%= analytics.goal.target %> books">
+        <span style="width: <%= analytics.goal.barPercent %>%"></span>
+      </div>
+
+      <form class="reading-goal-form" action="/stats/goal" method="POST">
+        <label for="reading_goal">Update annual goal</label>
+        <div>
+          <input
+            class="form-control"
+            id="reading_goal"
+            name="reading_goal"
+            type="number"
+            min="1"
+            max="1000"
+            value="<%= analytics.goal.target %>"
+            required>
+          <button class="btn btn-secondary" type="submit">
+            Save Goal
+          </button>
+        </div>
+      </form>
+    </section>
+
+    <div class="analytics-chart-grid">
+
+      <section class="surface-card analytics-chart" aria-labelledby="rating-distribution-heading">
+        <div class="analytics-chart-header">
+          <div>
+            <span class="analytics-kicker">Ratings</span>
+            <h2 id="rating-distribution-heading">How you rate your books</h2>
+            <p>Number of books at each score from 1 to 10.</p>
+          </div>
+        </div>
+
+        <% if (analytics.ratedCount > 0) { %>
+          <div class="analytics-chart-canvas">
+            <canvas
+              id="ratingDistributionChart"
+              role="img"
+              aria-label="Rating distribution for <%= analytics.ratedCount %> rated books.">
+            </canvas>
+          </div>
+
+          <p class="visually-hidden">
+            Rating data:
+            <%= activeRatingBuckets
+              .map(bucket =>
+                `${bucket.rating} out of 10, ${bucket.count} ${bucket.count === 1 ? "book" : "books"}`
+              )
+              .join("; ") %>.
+          </p>
+
+          <details class="analytics-data-summary">
+            <summary>Rating data summary</summary>
+            <ul>
+              <% activeRatingBuckets.forEach(bucket => { %>
+                <li>
+                  <%= bucket.rating %>/10:
+                  <%= bucket.count %>
+                  <%= bucket.count === 1 ? "book" : "books" %>
+                </li>
+              <% }) %>
+            </ul>
+          </details>
+        <% } else { %>
+          <div class="analytics-panel-empty">
+            <i data-lucide="star-off" aria-hidden="true"></i>
+            <h3>No ratings to chart</h3>
+            <p>Add a 1–10 rating to a book to build your distribution.</p>
+            <a href="/" class="btn btn-secondary">Rate a Book</a>
+          </div>
+        <% } %>
+      </section>
+
+      <section class="surface-card analytics-chart" aria-labelledby="monthly-reading-heading">
+        <div class="analytics-chart-header">
+          <div>
+            <span class="analytics-kicker">Reading pace</span>
+            <h2 id="monthly-reading-heading">Books read by month</h2>
+            <p>Your completed books across <%= analytics.year %>.</p>
+          </div>
+        </div>
+
+        <% if (analytics.booksThisYear > 0) { %>
+          <div class="analytics-chart-canvas">
+            <canvas
+              id="monthlyReadingChart"
+              role="img"
+              aria-label="<%= analytics.booksThisYear %> books read by month in <%= analytics.year %>.">
+            </canvas>
+          </div>
+
+          <p class="visually-hidden">
+            Monthly reading data:
+            <%= activeMonths
+              .map(month =>
+                `${month.label}, ${month.count} ${month.count === 1 ? "book" : "books"}`
+              )
+              .join("; ") %>.
+          </p>
+
+          <details class="analytics-data-summary">
+            <summary>Monthly reading data summary</summary>
+            <ul>
+              <% activeMonths.forEach(month => { %>
+                <li>
+                  <%= month.label %>:
+                  <%= month.count %>
+                  <%= month.count === 1 ? "book" : "books" %>
+                </li>
+              <% }) %>
+            </ul>
+          </details>
+        <% } else { %>
+          <div class="analytics-panel-empty">
+            <i data-lucide="calendar-x" aria-hidden="true"></i>
+            <h3>No <%= analytics.year %> reading dates</h3>
+            <p>Add a date read to see how your reading changes month to month.</p>
+            <a href="/" class="btn btn-secondary">Update a Book</a>
+          </div>
+        <% } %>
+      </section>
+
+    </div>
+
+    <div class="analytics-list-grid">
+
+      <section class="surface-card analytics-list-card" aria-labelledby="highest-rated-heading">
+        <div class="analytics-list-header">
+          <span class="analytics-section-icon" aria-hidden="true">
+            <i data-lucide="trophy"></i>
+          </span>
+          <div>
+            <h2 id="highest-rated-heading">Highest-rated books</h2>
+            <p>Your top scores, up to five books.</p>
+          </div>
+        </div>
+
+        <% if (analytics.highestRated.length) { %>
+          <ol class="analytics-ranked-list">
+            <% analytics.highestRated.forEach((book, index) => { %>
+              <li>
+                <span class="analytics-rank" aria-hidden="true"><%= index + 1 %></span>
+                <a href="/book/<%= book.id %>">
+                  <strong><%= book.title %></strong>
+                  <span><%= book.author || "Author not recorded" %></span>
+                </a>
+                <span class="analytics-score"><%= book.rating %>/10</span>
+              </li>
+            <% }) %>
+          </ol>
+        <% } else { %>
+          <div class="analytics-list-empty">
+            <p>Rate a book to reveal your favorites.</p>
+          </div>
+        <% } %>
+      </section>
+
+      <section class="surface-card analytics-list-card" aria-labelledby="authors-heading">
+        <div class="analytics-list-header">
+          <span class="analytics-section-icon" aria-hidden="true">
+            <i data-lucide="users"></i>
+          </span>
+          <div>
+            <h2 id="authors-heading">Most-read authors</h2>
+            <p>Authors appearing most often in your library.</p>
+          </div>
+        </div>
+
+        <% if (analytics.mostReadAuthors.length) { %>
+          <ol class="analytics-ranked-list analytics-author-list">
+            <% analytics.mostReadAuthors.forEach((item, index) => { %>
+              <li>
+                <span class="analytics-rank" aria-hidden="true"><%= index + 1 %></span>
+                <strong><%= item.author %></strong>
+                <span>
+                  <%= item.count %>
+                  <%= item.count === 1 ? "book" : "books" %>
+                </span>
+              </li>
+            <% }) %>
+          </ol>
+        <% } else { %>
+          <div class="analytics-list-empty">
+            <p>Add authors to your books to see this ranking.</p>
+          </div>
+        <% } %>
+      </section>
+
+      <section class="surface-card analytics-list-card analytics-activity-card" aria-labelledby="activity-heading">
+        <div class="analytics-list-header">
+          <span class="analytics-section-icon" aria-hidden="true">
+            <i data-lucide="history"></i>
+          </span>
+          <div>
+            <h2 id="activity-heading">Recent reading activity</h2>
+            <p>Your five most recently completed books.</p>
+          </div>
+        </div>
+
+        <% if (analytics.recentActivity.length) { %>
+          <ol class="analytics-activity-list">
+            <% analytics.recentActivity.forEach(book => { %>
+              <li>
+                <span class="activity-marker" aria-hidden="true"></span>
+                <div>
+                  <a href="/book/<%= book.id %>"><%= book.title %></a>
+                  <span>
+                    <%= book.author || "Author not recorded" %>
+                    · <%= formatReadDate(book.readDate) %>
+                  </span>
+                </div>
+              </li>
+            <% }) %>
+          </ol>
+        <% } else { %>
+          <div class="analytics-list-empty">
+            <p>Add a date read to a book to begin your activity timeline.</p>
+          </div>
+        <% } %>
+      </section>
+
+    </div>
 
   <% } %>
 
@@ -79,51 +365,192 @@
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
-  const ratings =
-    <%- JSON.stringify(
-      books
-        .filter(book => book.rating)
-        .map(book => ({
-          title: book.title,
-          rating: book.rating
-        }))
-    ).replace(/</g, "\\u003c") %>;
+  (() => {
+    if (typeof Chart === "undefined") {
+      return;
+    }
 
-  const chartCanvas =
-    document.getElementById("ratingChart");
+    const ratingDistribution =
+      <%- JSON.stringify(
+        analytics.ratingDistribution
+      ).replace(/</g, "\\u003c") %>;
+    const booksByMonth =
+      <%- JSON.stringify(
+        analytics.booksByMonth
+      ).replace(/</g, "\\u003c") %>;
+    const charts = [];
 
-  if (chartCanvas) {
-    new Chart(chartCanvas, {
-      type: "bar",
-      data: {
-        labels: ratings.map(book => book.title),
-        datasets: [{
-          label: "Rating",
-          data: ratings.map(book => book.rating),
-          backgroundColor: "#6366F1",
-          borderRadius: 8
-        }]
-      },
-      options: {
+    function chartColors() {
+      const styles =
+        getComputedStyle(
+          document.documentElement
+        );
+
+      return {
+        primary:
+          styles.getPropertyValue("--primary").trim(),
+        primarySoft:
+          styles.getPropertyValue("--primary-soft").trim(),
+        text:
+          styles.getPropertyValue("--text-light").trim(),
+        border:
+          styles.getPropertyValue("--border").trim()
+      };
+    }
+
+    function sharedOptions() {
+      const colors = chartColors();
+
+      return {
         responsive: true,
         maintainAspectRatio: false,
-        scales: {
-          y: {
-            beginAtZero: true,
-            max: 10,
-            ticks: {
-              stepSize: 1
-            }
-          }
+        interaction: {
+          intersect: false,
+          mode: "index"
         },
         plugins: {
           legend: {
             display: false
+          },
+          tooltip: {
+            displayColors: false
+          }
+        },
+        scales: {
+          x: {
+            grid: {
+              display: false
+            },
+            ticks: {
+              color: colors.text
+            },
+            border: {
+              color: colors.border
+            }
+          },
+          y: {
+            beginAtZero: true,
+            ticks: {
+              color: colors.text,
+              precision: 0,
+              stepSize: 1
+            },
+            grid: {
+              color: colors.border
+            },
+            border: {
+              display: false
+            }
           }
         }
+      };
+    }
+
+    const ratingCanvas =
+      document.getElementById(
+        "ratingDistributionChart"
+      );
+
+    if (ratingCanvas) {
+      const colors = chartColors();
+
+      charts.push(
+        new Chart(ratingCanvas, {
+          type: "bar",
+          data: {
+            labels:
+              ratingDistribution.map(
+                bucket => `${bucket.rating}/10`
+              ),
+            datasets: [{
+              label: "Books",
+              data:
+                ratingDistribution.map(
+                  bucket => bucket.count
+                ),
+              backgroundColor: colors.primary,
+              borderRadius: 7,
+              borderSkipped: false
+            }]
+          },
+          options: sharedOptions()
+        })
+      );
+    }
+
+    const monthlyCanvas =
+      document.getElementById(
+        "monthlyReadingChart"
+      );
+
+    if (monthlyCanvas) {
+      const colors = chartColors();
+
+      charts.push(
+        new Chart(monthlyCanvas, {
+          type: "line",
+          data: {
+            labels:
+              booksByMonth.map(
+                month => month.label
+              ),
+            datasets: [{
+              label: "Books read",
+              data:
+                booksByMonth.map(
+                  month => month.count
+                ),
+              backgroundColor: colors.primarySoft,
+              borderColor: colors.primary,
+              pointBackgroundColor: colors.primary,
+              pointRadius: 4,
+              pointHoverRadius: 6,
+              borderWidth: 3,
+              fill: true,
+              tension: 0.32
+            }]
+          },
+          options: sharedOptions()
+        })
+      );
+    }
+
+    const themeObserver =
+      new MutationObserver(() => {
+        const colors = chartColors();
+
+        charts.forEach(chart => {
+          chart.options =
+            sharedOptions();
+
+          chart.data.datasets.forEach(
+            dataset => {
+              if (chart.config.type === "line") {
+                dataset.backgroundColor =
+                  colors.primarySoft;
+                dataset.borderColor =
+                  colors.primary;
+                dataset.pointBackgroundColor =
+                  colors.primary;
+              } else {
+                dataset.backgroundColor =
+                  colors.primary;
+              }
+            }
+          );
+
+          chart.update();
+        });
+      });
+
+    themeObserver.observe(
+      document.documentElement,
+      {
+        attributes: true,
+        attributeFilter: ["class"]
       }
-    });
-  }
+    );
+  })();
 </script>
 
 <%- include("partials/footer") %>

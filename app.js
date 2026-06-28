@@ -26,6 +26,9 @@ app.use((req, res, next) => {
   res.locals.userName = req.session.userName;
   res.locals.currentPath = req.path;
   res.locals.pageTitle = "BookVault";
+  res.locals.notice =
+    req.session.notice || null;
+  delete req.session.notice;
   next();
 });
 

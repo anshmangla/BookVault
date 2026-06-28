@@ -6,13 +6,35 @@
     eyebrow: "Your library",
     icon: "book-open",
     title: book.title,
-    description: book.author
-      ? `By ${book.author}`
-      : "Author not available",
-    actionHref: `/edit/${book.id}`,
-    actionLabel: "Edit Book",
-    actionIcon: "pencil"
+    description: [
+      book.subtitle,
+      book.author
+        ? `By ${book.author}`
+        : "Author not available"
+    ].filter(Boolean).join(" · ")
   }) %>
+
+  <%- include("partials/action-toast") %>
+
+  <div class="book-detail-actions" aria-label="Book actions">
+    <a href="/edit/<%= book.id %>" class="btn btn-primary">
+      <i data-lucide="pencil" aria-hidden="true"></i>
+      Edit Book
+    </a>
+
+    <form
+      action="/delete/<%= book.id %>?_method=DELETE"
+      method="POST"
+      data-confirm-form
+      data-confirm-title="Remove <%= book.title %>?"
+      data-confirm-message="Remove “<%= book.title %>” from your library? You can undo this from the next screen."
+      data-confirm-label="Remove Book">
+      <button class="btn btn-danger-ghost" type="submit">
+        <i data-lucide="trash-2" aria-hidden="true"></i>
+        Delete
+      </button>
+    </form>
+  </div>
 
   <section class="surface-card book-detail-card">
 
@@ -39,6 +61,13 @@
           <dt>Publication year</dt>
           <dd><%= book.publish_year || "Not available" %></dd>
         </div>
+
+        <% if (book.published_date) { %>
+          <div>
+            <dt>Published</dt>
+            <dd><%= book.published_date %></dd>
+          </div>
+        <% } %>
 
         <% if (book.publisher) { %>
           <div>
@@ -71,6 +100,17 @@
         </div>
       </dl>
 
+      <% if (
+        Array.isArray(book.categories) &&
+        book.categories.length
+      ) { %>
+        <div class="book-category-list" aria-label="Categories">
+          <% book.categories.forEach(category => { %>
+            <span><%= category %></span>
+          <% }) %>
+        </div>
+      <% } %>
+
     </div>
 
   </section>
@@ -81,30 +121,19 @@
 
       <section class="surface-card book-text-section book-description-section">
         <h2>About this book</h2>
-        <p><%= book.description %></p>
-
-        <% if (
-          Array.isArray(book.categories) &&
-          book.categories.length
-        ) { %>
-          <div class="book-category-list" aria-label="Categories">
-            <% book.categories.forEach(category => { %>
-              <span><%= category %></span>
-            <% }) %>
-          </div>
-        <% } %>
+        <p class="book-description"><%= book.description %></p>
       </section>
 
     <% } %>
 
     <section class="surface-card book-text-section">
       <h2>Notes</h2>
-      <p><%= book.notes || "No notes added yet." %></p>
+      <p class="<%= book.notes ? "reader-prose" : "empty-copy" %>"><%= book.notes || "No notes added yet." %></p>
     </section>
 
     <section class="surface-card book-text-section">
       <h2>Review</h2>
-      <p><%= book.review || "No review added yet." %></p>
+      <p class="<%= book.review ? "reader-prose" : "empty-copy" %>"><%= book.review || "No review added yet." %></p>
     </section>
 
   </div>

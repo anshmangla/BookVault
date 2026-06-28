@@ -9,15 +9,64 @@
     description: `Update the details and reading notes for ${book.title}.`
   }) %>
 
+  <%- include("partials/action-toast") %>
+
   <section class="surface-card form-card" aria-label="Edit book details">
 
     <form
       action="/edit/<%= book.id %>?_method=PUT"
       method="POST">
 
+      <% if (book.google_volume_id) { %>
+        <section class="imported-metadata" aria-labelledby="imported-metadata-title">
+          <div class="imported-metadata-heading">
+            <i data-lucide="database" aria-hidden="true"></i>
+            <div>
+              <h2 id="imported-metadata-title">Google Books metadata</h2>
+              <p>
+                Imported details stay attached when you update your reading information.
+              </p>
+            </div>
+          </div>
+
+          <dl>
+            <% if (book.subtitle) { %>
+              <div>
+                <dt>Subtitle</dt>
+                <dd><%= book.subtitle %></dd>
+              </div>
+            <% } %>
+            <% if (book.publisher) { %>
+              <div>
+                <dt>Publisher</dt>
+                <dd><%= book.publisher %></dd>
+              </div>
+            <% } %>
+            <% if (book.published_date) { %>
+              <div>
+                <dt>Published</dt>
+                <dd><%= book.published_date %></dd>
+              </div>
+            <% } %>
+            <% if (book.page_count) { %>
+              <div>
+                <dt>Length</dt>
+                <dd><%= book.page_count %> pages</dd>
+              </div>
+            <% } %>
+            <% if (book.language) { %>
+              <div>
+                <dt>Language</dt>
+                <dd><%= book.language.toUpperCase() %></dd>
+              </div>
+            <% } %>
+          </dl>
+        </section>
+      <% } %>
+
       <section class="form-section" aria-labelledby="book-information">
         <h2 class="form-section-title" id="book-information">
-          Book information
+          Book basics
         </h2>
 
         <%- include("partials/form-field", {
@@ -84,7 +133,7 @@
           label: "Private notes",
           name: "notes",
           type: "textarea",
-          rows: 4,
+          rows: 6,
           value: book.notes || ""
         }) %>
 
@@ -92,7 +141,7 @@
           label: "Review",
           name: "review",
           type: "textarea",
-          rows: 5,
+          rows: 8,
           value: book.review || ""
         }) %>
       </section>

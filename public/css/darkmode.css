@@ -72,6 +72,14 @@ html.dark .alert-success {
   border-color: #065F46;
 }
 
+html.dark .imported-metadata {
+  border-color: #4338CA;
+}
+
+html.dark .book-detail-actions .btn-danger-ghost {
+  border-color: #7F1D1D;
+}
+
 html.dark .alert-info {
   color: #BAE6FD;
   border-color: #075985;

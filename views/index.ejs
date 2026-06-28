@@ -1,229 +1,312 @@
+<%
+  const hasFilters =
+    Boolean(filters.q) ||
+    filters.rating !== "all" ||
+    Boolean(filters.year);
+  const resultStart =
+    totalResults > 0
+      ? (
+          pagination.currentPage - 1
+        ) * pagination.pageSize + 1
+      : 0;
+  const resultEnd =
+    Math.min(
+      pagination.currentPage *
+        pagination.pageSize,
+      totalResults
+    );
+
+  function libraryUrl(overrides = {}) {
+    const state = {
+      q: filters.q,
+      sort: filters.sort,
+      rating: filters.rating,
+      year: filters.year || "",
+      page: filters.page,
+      ...overrides
+    };
+    const params =
+      new URLSearchParams();
+
+    if (state.q) {
+      params.set("q", state.q);
+    }
+    if (
+      state.sort &&
+      state.sort !== "newest"
+    ) {
+      params.set("sort", state.sort);
+    }
+    if (
+      state.rating &&
+      state.rating !== "all"
+    ) {
+      params.set("rating", state.rating);
+    }
+    if (state.year) {
+      params.set("year", state.year);
+    }
+    if (state.page && state.page > 1) {
+      params.set("page", state.page);
+    }
+
+    const query = params.toString();
+    return query ? `/?${query}` : "/";
+  }
+
+  function formatBookDate(value) {
+    return new Date(value).toLocaleDateString(
+      undefined,
+      {
+        month: "short",
+        year: "numeric"
+      }
+    );
+  }
+%>
+
 <%- include("partials/header") %>
 
 <main class="library-page">
 
-  <section class="hero-section" aria-label="Welcome">
+  <%- include("partials/action-toast") %>
 
-    <div class="hero-glow" aria-hidden="true"></div>
+  <% if (totalBooks === 0) { %>
 
-    <div class="hero-inner">
+    <section class="hero-section hero-section-onboarding" aria-label="Welcome">
 
-      <div class="hero-content">
+      <div class="hero-glow" aria-hidden="true"></div>
 
-        <span class="badge-soft hero-greeting">
-          <i data-lucide="sparkles" aria-hidden="true"></i>
-          <%= greeting %>, <%= userName || "Reader" %>
-        </span>
+      <div class="hero-inner">
+        <div class="hero-content">
+          <span class="badge-soft hero-greeting">
+            <i data-lucide="sparkles" aria-hidden="true"></i>
+            <%= greeting %>, <%= userName || "Reader" %>
+          </span>
 
-        <% if (totalBooks === 0) { %>
-
-          <h1 class="hero-title page-header-title">
+          <h1 class="hero-title">
             Build your
             <span class="text-gradient">digital bookshelf</span>
           </h1>
 
-          <p class="hero-description page-header-subtitle">
-            Organize your reading journey, discover amazing books,
-            write reviews, and keep every title in one beautiful place.
+          <p class="hero-description">
+            Keep every book, rating, note, and review together in a library that grows with you.
           </p>
 
           <div class="hero-actions">
-
             <a href="/search-book" class="btn btn-primary btn-hero">
               <i data-lucide="plus" aria-hidden="true"></i>
               Add Your First Book
             </a>
-
-            <a href="/search-book" class="btn btn-light btn-hero">
-              <i data-lucide="compass" aria-hidden="true"></i>
-              Discover Books
-            </a>
-
           </div>
-
-        <% } else { %>
-
-          <h1 class="hero-title page-header-title">
-            Your reading
-            <span class="text-gradient">library</span>
-          </h1>
-
-          <p class="hero-description page-header-subtitle">
-            <%= totalBooks %> <%= totalBooks === 1 ? "book" : "books" %> tracked,
-            <%= avgRating %> average rating —
-            everything you've read, rated, and reviewed.
-          </p>
-
-          <div class="hero-actions">
-
-            <a href="/search-book" class="btn btn-primary btn-hero">
-              <i data-lucide="plus" aria-hidden="true"></i>
-              Add Book
-            </a>
-
-            <a href="/search-book" class="btn btn-light btn-hero">
-              <i data-lucide="compass" aria-hidden="true"></i>
-              Discover
-            </a>
-
-          </div>
-
-        <% } %>
-
+        </div>
       </div>
 
-      <% if (totalBooks > 0) { %>
+    </section>
 
-        <aside class="hero-stats" aria-label="Library statistics">
+  <% } else { %>
 
-          <div class="hero-stat">
+    <section class="library-overview" aria-labelledby="library-title">
 
-            <span class="hero-stat-icon" aria-hidden="true">
-              <i data-lucide="book-open"></i>
-            </span>
+      <div class="library-overview-copy">
+        <span class="badge-soft">
+          <i data-lucide="sparkles" aria-hidden="true"></i>
+          <%= greeting %>, <%= userName || "Reader" %>
+        </span>
 
-            <span class="hero-stat-value"><%= totalBooks %></span>
+        <h1 id="library-title">My library</h1>
 
-            <span class="hero-stat-label">Books in Library</span>
+        <p>
+          Your books, reading history, and notes in one place.
+        </p>
+      </div>
 
-          </div>
+      <a href="/search-book" class="btn btn-primary">
+        <i data-lucide="plus" aria-hidden="true"></i>
+        Add Book
+      </a>
 
-          <div class="hero-stat">
-
-            <span class="hero-stat-icon" aria-hidden="true">
-              <i data-lucide="star"></i>
-            </span>
-
-            <span class="hero-stat-value"><%= avgRating %></span>
-
-            <span class="hero-stat-label">Average Rating</span>
-
-          </div>
-
-          <div class="hero-stat hero-stat-featured">
-
-            <span class="hero-stat-icon" aria-hidden="true">
-              <i data-lucide="trophy"></i>
-            </span>
-
-            <span class="hero-stat-value hero-stat-value-clamp">
-              <%= topBook ? topBook.title : "—" %>
-            </span>
-
-            <span class="hero-stat-label">Highest Rated</span>
-
-          </div>
-
-        </aside>
-
-      <% } %>
-
-    </div>
-
-  </section>
-
-  <section class="library-section" aria-labelledby="library-heading">
-
-    <div class="library-section-head">
-      <h2 id="library-heading" class="library-heading">Books</h2>
-    </div>
-
-    <div class="library-toolbar">
-
-      <form action="/search" method="GET" class="search-bar" role="search">
-
-        <label for="searchInput" class="visually-hidden">
-          Search your library by title or author
-        </label>
-
-        <div class="search-bar-inner">
-
-          <span class="search-bar-icon" aria-hidden="true">
-            <i data-lucide="search"></i>
-          </span>
-
-          <input
-            type="text"
-            id="searchInput"
-            class="search-bar-input"
-            placeholder="Search title or author"
-            name="q"
-            autocomplete="off"
-            aria-autocomplete="list"
-            aria-controls="searchSuggestions"
-            aria-expanded="false">
-
-          <div
-            id="searchSuggestions"
-            class="search-suggestions"
-            role="listbox"
-            hidden>
-          </div>
-
+      <div class="library-overview-stats" aria-label="Library statistics">
+        <div>
+          <i data-lucide="library-big" aria-hidden="true"></i>
+          <strong><%= totalBooks %></strong>
+          <span><%= totalBooks === 1 ? "Book" : "Books" %></span>
         </div>
 
-        <button type="submit" class="btn btn-primary search-bar-submit">
-          Search
+        <div>
+          <i data-lucide="star" aria-hidden="true"></i>
+          <strong><%= avgRating %></strong>
+          <span>Average rating</span>
+        </div>
+
+        <div>
+          <i data-lucide="trophy" aria-hidden="true"></i>
+          <strong><%= topBook ? topBook.title : "Not rated" %></strong>
+          <span>Highest rated</span>
+        </div>
+      </div>
+
+    </section>
+
+  <% } %>
+
+  <section class="library-section" aria-labelledby="books-heading">
+
+    <div class="library-section-head">
+      <div>
+        <p class="library-section-kicker">Collection</p>
+        <h2 id="books-heading" class="library-heading">
+          <% if (filters.q) { %>
+            Results for “<%= filters.q %>”
+          <% } else { %>
+            Books
+          <% } %>
+        </h2>
+      </div>
+
+      <% if (hasFilters) { %>
+        <a href="/" class="btn btn-light btn-compact">
+          <i data-lucide="x" aria-hidden="true"></i>
+          Clear Filters
+        </a>
+      <% } %>
+    </div>
+
+    <% if (totalBooks > 0) { %>
+
+      <form action="/" method="GET" class="library-controls" role="search">
+
+        <div class="library-search">
+          <label for="searchInput" class="visually-hidden">
+            Search your library by title, author, or ISBN
+          </label>
+
+          <div class="search-bar-inner">
+            <span class="search-bar-icon" aria-hidden="true">
+              <i data-lucide="search"></i>
+            </span>
+
+            <input
+              type="search"
+              id="searchInput"
+              class="search-bar-input"
+              placeholder="Search title, author, or ISBN"
+              name="q"
+              value="<%= filters.q %>"
+              autocomplete="off"
+              aria-autocomplete="list"
+              aria-controls="searchSuggestions"
+              aria-expanded="false">
+
+            <% if (filters.q) { %>
+              <a
+                href="<%= libraryUrl({ q: "", page: 1 }) %>"
+                class="search-clear"
+                aria-label="Clear search">
+                <i data-lucide="x" aria-hidden="true"></i>
+              </a>
+            <% } %>
+
+            <div
+              id="searchSuggestions"
+              class="search-suggestions"
+              role="listbox"
+              hidden>
+            </div>
+          </div>
+        </div>
+
+        <div class="library-control">
+          <label for="sort">Sort</label>
+          <select id="sort" name="sort" class="form-select">
+            <option value="newest" <%= filters.sort === "newest" ? "selected" : "" %>>
+              Recently added
+            </option>
+            <option value="recent" <%= filters.sort === "recent" ? "selected" : "" %>>
+              Recently read
+            </option>
+            <option value="rating" <%= filters.sort === "rating" ? "selected" : "" %>>
+              Highest rated
+            </option>
+            <option value="title" <%= filters.sort === "title" ? "selected" : "" %>>
+              Title A–Z
+            </option>
+            <option value="author" <%= filters.sort === "author" ? "selected" : "" %>>
+              Author A–Z
+            </option>
+          </select>
+        </div>
+
+        <div class="library-control">
+          <label for="ratingFilter">Rating</label>
+          <select id="ratingFilter" name="rating" class="form-select">
+            <option value="all" <%= filters.rating === "all" ? "selected" : "" %>>
+              All books
+            </option>
+            <option value="rated" <%= filters.rating === "rated" ? "selected" : "" %>>
+              Rated
+            </option>
+            <option value="unrated" <%= filters.rating === "unrated" ? "selected" : "" %>>
+              Unrated
+            </option>
+          </select>
+        </div>
+
+        <div class="library-control">
+          <label for="yearFilter">Read in</label>
+          <select id="yearFilter" name="year" class="form-select">
+            <option value="">Any year</option>
+            <% availableYears.forEach(year => { %>
+              <option
+                value="<%= year %>"
+                <%= filters.year === year ? "selected" : "" %>>
+                <%= year %>
+              </option>
+            <% }) %>
+          </select>
+        </div>
+
+        <button type="submit" class="btn btn-primary library-apply">
+          Apply
         </button>
 
       </form>
 
-      <div class="filter-group" role="group" aria-label="Sort books">
-
-        <a href="/" data-sort="all" class="filter-pill">
-          All
-        </a>
-
-        <a href="/?sort=rating" data-sort="rating" class="filter-pill">
-          Rating
-        </a>
-
-        <a href="/?sort=recent" data-sort="recent" class="filter-pill">
-          Recent
-        </a>
-
+      <div class="library-results-summary" aria-live="polite">
+        <% if (totalResults > 0) { %>
+          Showing <strong><%= resultStart %>–<%= resultEnd %></strong>
+          of <strong><%= totalResults %></strong>
+          <%= totalResults === 1 ? "book" : "books" %>
+        <% } else { %>
+          No books match these filters
+        <% } %>
       </div>
 
-    </div>
+    <% } %>
 
-    <% if (books.length === 0) { %>
+    <% if (totalBooks === 0) { %>
 
-      <div class="empty-library" id="emptyLibrary">
+      <%- include("partials/empty-state", {
+        icon: "library-big",
+        title: "Your library is ready",
+        description: "Add your first book from Google Books or enter it manually.",
+        actionHref: "/search-book",
+        actionLabel: "Add Your First Book",
+        actionIcon: "plus"
+      }) %>
 
-        <div class="empty-library-icon" aria-hidden="true">
-          <i data-lucide="library-big"></i>
-        </div>
+    <% } else if (books.length === 0) { %>
 
-        <div class="empty-library-content" data-empty="library">
-
-          <h3>No books yet</h3>
-
-          <p>
-            Start building your library by adding your first book.
-          </p>
-
-          <a href="/search-book" class="btn btn-primary">
-            <i data-lucide="plus" aria-hidden="true"></i>
-            Add Book
-          </a>
-
-        </div>
-
-        <div class="empty-library-content" data-empty="search" hidden>
-
-          <h3>No results found</h3>
-
-          <p>
-            Try a different title or author, or browse your full library.
-          </p>
-
-          <a href="/" class="btn btn-light">
-            View All Books
-          </a>
-
-        </div>
-
-      </div>
+      <%- include("partials/empty-state", {
+        icon: "search-x",
+        title: "No matching books",
+        description: filters.q
+          ? `Nothing in your library matches “${filters.q}”. Try another search or clear the filters.`
+          : "Try changing or clearing your current filters.",
+        actionHref: "/",
+        actionLabel: "Clear Filters",
+        actionIcon: "x"
+      }) %>
 
     <% } else { %>
 
@@ -231,80 +314,112 @@
 
         <% books.forEach((book, index) => { %>
 
-          <div class="col-lg-4 col-md-6 mb-4">
+          <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
 
             <article class="book-card h-100" style="--stagger:<%= index %>">
 
               <a href="/book/<%= book.id %>" class="book-card-link">
 
                 <div class="cover-container">
-
                   <% if (book.cover_url) { %>
-
                     <img
                       src="<%= book.cover_url %>"
                       class="book-cover"
-                      alt="<%= book.title %> cover">
-
+                      alt="<%= book.title %> cover"
+                      loading="lazy">
                   <% } else { %>
-
                     <div class="cover-placeholder" aria-hidden="true">
                       <i data-lucide="book-open"></i>
                     </div>
-
                   <% } %>
 
                   <% if (book.rating) { %>
-
                     <span class="book-rating-badge">
                       <i data-lucide="star" aria-hidden="true"></i>
-                      <%= book.rating %>
+                      <%= book.rating %>/10
                     </span>
-
                   <% } %>
-
                 </div>
 
                 <div class="book-card-body">
-
                   <h3 class="book-card-title"><%= book.title %></h3>
+                  <p class="book-card-author">
+                    <%= book.author || "Unknown author" %>
+                  </p>
 
-                  <p class="book-card-author"><%= book.author %></p>
+                  <div class="book-card-metadata">
+                    <% if (book.date_read) { %>
+                      <span>
+                        <i data-lucide="calendar-check" aria-hidden="true"></i>
+                        Read <%= formatBookDate(book.date_read) %>
+                      </span>
+                    <% } else if (book.publish_year) { %>
+                      <span>
+                        <i data-lucide="calendar" aria-hidden="true"></i>
+                        Published <%= book.publish_year %>
+                      </span>
+                    <% } else { %>
+                      <span>
+                        <i data-lucide="bookmark" aria-hidden="true"></i>
+                        In your library
+                      </span>
+                    <% } %>
+                  </div>
 
                   <% if (book.review) { %>
-
                     <div class="review-preview">
                       <p><%= book.review %></p>
                     </div>
-
                   <% } %>
-
                 </div>
 
               </a>
 
               <div class="book-card-footer">
+                <span>
+                  <%= book.google_volume_id ? "Google Books" : "Manual entry" %>
+                </span>
 
-                <a href="/edit/<%= book.id %>" class="btn btn-ghost">
-                  <i data-lucide="pencil" aria-hidden="true"></i>
-                  Edit
-                </a>
-
-                <form
-                  action="/delete/<%= book.id %>?_method=DELETE"
-                  method="POST"
-                  data-confirm-form
-                  data-confirm-title="Delete book?"
-                  data-confirm-message="Delete <%= book.title %> from your library? This cannot be undone."
-                  data-confirm-label="Delete Book">
-
-                  <button type="submit" class="btn btn-danger-ghost">
-                    <i data-lucide="trash-2" aria-hidden="true"></i>
-                    Delete
+                <div class="dropdown">
+                  <button
+                    class="btn btn-card-menu"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                    aria-label="Manage <%= book.title %>">
+                    <i data-lucide="ellipsis" aria-hidden="true"></i>
                   </button>
 
-                </form>
-
+                  <ul class="dropdown-menu dropdown-menu-end">
+                    <li>
+                      <a class="dropdown-item" href="/book/<%= book.id %>">
+                        <i data-lucide="eye" aria-hidden="true"></i>
+                        View Details
+                      </a>
+                    </li>
+                    <li>
+                      <a class="dropdown-item" href="/edit/<%= book.id %>">
+                        <i data-lucide="pencil" aria-hidden="true"></i>
+                        Edit
+                      </a>
+                    </li>
+                    <li><hr class="dropdown-divider"></li>
+                    <li>
+                      <form
+                        action="/delete/<%= book.id %>?_method=DELETE"
+                        method="POST"
+                        data-confirm-form
+                        data-confirm-title="Delete book?"
+                        data-confirm-message="Remove “<%= book.title %>” from your library? You can undo this from the next screen."
+                        data-confirm-label="Remove Book">
+                        <button type="submit" class="dropdown-item text-danger">
+                          <i data-lucide="trash-2" aria-hidden="true"></i>
+                          Delete
+                        </button>
+                      </form>
+                    </li>
+                  </ul>
+                </div>
               </div>
 
             </article>
@@ -315,6 +430,50 @@
 
       </div>
 
+      <% if (pagination.totalPages > 1) { %>
+        <nav class="library-pagination" aria-label="Library pages">
+          <a
+            href="<%= libraryUrl({ page: pagination.currentPage - 1 }) %>"
+            class="pagination-link<%= pagination.currentPage === 1 ? " disabled" : "" %>"
+            <%= pagination.currentPage === 1 ? 'aria-disabled="true" tabindex="-1"' : "" %>>
+            <i data-lucide="chevron-left" aria-hidden="true"></i>
+            Previous
+          </a>
+
+          <div class="pagination-pages">
+            <%
+              const firstPage =
+                Math.max(
+                  1,
+                  pagination.currentPage - 2
+                );
+              const lastPage =
+                Math.min(
+                  pagination.totalPages,
+                  firstPage + 4
+                );
+            %>
+
+            <% for (let page = firstPage; page <= lastPage; page += 1) { %>
+              <a
+                href="<%= libraryUrl({ page }) %>"
+                class="pagination-number<%= page === pagination.currentPage ? " active" : "" %>"
+                <%= page === pagination.currentPage ? 'aria-current="page"' : "" %>>
+                <%= page %>
+              </a>
+            <% } %>
+          </div>
+
+          <a
+            href="<%= libraryUrl({ page: pagination.currentPage + 1 }) %>"
+            class="pagination-link<%= pagination.currentPage === pagination.totalPages ? " disabled" : "" %>"
+            <%= pagination.currentPage === pagination.totalPages ? 'aria-disabled="true" tabindex="-1"' : "" %>>
+            Next
+            <i data-lucide="chevron-right" aria-hidden="true"></i>
+          </a>
+        </nav>
+      <% } %>
+
     <% } %>
 
   </section>
@@ -322,114 +481,132 @@
 </main>
 
 <script>
-
   const searchInput =
     document.getElementById("searchInput");
-
   const suggestions =
-    document.getElementById("searchSuggestions");
-
-  const params =
-    new URLSearchParams(
-      window.location.search
+    document.getElementById(
+      "searchSuggestions"
     );
 
-  const activeSort =
-    params.get("sort") || "all";
+  if (searchInput && suggestions) {
+    let debounceTimer;
+    let requestController;
+    let activeIndex = -1;
 
-  const searchQuery =
-    params.get("q");
-
-  if (searchQuery) {
-    searchInput.value = searchQuery;
-
-    if (<%= totalBooks %> === 0) {
-
-      const title =
-        document.querySelector(
-          ".page-header-title"
-        );
-
-      const subtitle =
-        document.querySelector(
-          ".page-header-subtitle"
-        );
-
-      const actions =
-        document.querySelector(
-          ".hero-actions"
-        );
-
-      if (title) {
-        title.textContent =
-          "Search Results";
-      }
-
-      if (subtitle) {
-        subtitle.textContent =
-          `No books match "${searchQuery}"`;
-      }
-
-      if (actions) {
-        actions.hidden = true;
-      }
-
+    function suggestionItems() {
+      return Array.from(
+        suggestions.querySelectorAll(
+          ".search-suggestion-item"
+        )
+      );
     }
 
-  }
+    function setSuggestionsOpen(open) {
+      searchInput.setAttribute(
+        "aria-expanded",
+        open ? "true" : "false"
+      );
+      suggestions.hidden = !open;
 
-  document
-    .querySelectorAll("[data-sort]")
-    .forEach(link => {
-
-      const isActive =
-        link.dataset.sort === activeSort;
-
-      if (isActive) {
-        link.classList.add("active");
-        link.setAttribute(
-          "aria-current",
-          "true"
+      if (!open) {
+        activeIndex = -1;
+        searchInput.removeAttribute(
+          "aria-activedescendant"
         );
       }
+    }
 
-    });
+    function setActiveSuggestion(index) {
+      const items =
+        suggestionItems();
 
-  const emptyLibrary =
-    document.getElementById(
-      "emptyLibrary"
-    );
+      if (!items.length) {
+        return;
+      }
 
-  if (
-    emptyLibrary &&
-    searchQuery
-  ) {
+      activeIndex =
+        (
+          index + items.length
+        ) % items.length;
 
-    emptyLibrary
-      .querySelector('[data-empty="library"]')
-      .hidden = true;
+      items.forEach((item, itemIndex) => {
+        const isActive =
+          itemIndex === activeIndex;
+        item.classList.toggle(
+          "active",
+          isActive
+        );
+        item.setAttribute(
+          "aria-selected",
+          String(isActive)
+        );
+      });
 
-    emptyLibrary
-      .querySelector('[data-empty="search"]')
-      .hidden = false;
+      const activeItem =
+        items[activeIndex];
+      searchInput.setAttribute(
+        "aria-activedescendant",
+        activeItem.id
+      );
+      activeItem.scrollIntoView({
+        block: "nearest"
+      });
+    }
 
-  }
+    function appendHighlighted(
+      element,
+      text,
+      query
+    ) {
+      const source =
+        String(text || "");
+      const matchIndex =
+        source
+          .toLocaleLowerCase()
+          .indexOf(
+            query.toLocaleLowerCase()
+          );
 
-  function setSuggestionsOpen(open) {
+      if (matchIndex < 0) {
+        element.textContent = source;
+        return;
+      }
 
-    searchInput.setAttribute(
-      "aria-expanded",
-      open ? "true" : "false"
-    );
+      element.append(
+        document.createTextNode(
+          source.slice(0, matchIndex)
+        )
+      );
 
-    suggestions.hidden = !open;
+      const mark =
+        document.createElement("mark");
+      mark.textContent =
+        source.slice(
+          matchIndex,
+          matchIndex + query.length
+        );
+      element.appendChild(mark);
+      element.append(
+        document.createTextNode(
+          source.slice(
+            matchIndex + query.length
+          )
+        )
+      );
+    }
 
-  }
+    function showSuggestionMessage(message) {
+      suggestions.replaceChildren();
+      const status =
+        document.createElement("div");
+      status.className =
+        "search-suggestion-empty";
+      status.textContent = message;
+      suggestions.appendChild(status);
+      setSuggestionsOpen(true);
+    }
 
-  searchInput.addEventListener(
-    "input",
-    async () => {
-
+    async function loadSuggestions() {
       const query =
         searchInput.value.trim();
 
@@ -438,93 +615,147 @@
         return;
       }
 
-      const response =
-        await fetch(
-          `/api/search-books?q=${encodeURIComponent(query)}`
-        );
+      requestController?.abort();
+      requestController =
+        new AbortController();
+      showSuggestionMessage("Searching…");
 
-      const books =
-        await response.json();
+      try {
+        const response =
+          await fetch(
+            `/api/search-books?q=${encodeURIComponent(query)}`,
+            {
+              signal:
+                requestController.signal
+            }
+          );
+        const books =
+          await response.json();
 
-      suggestions.innerHTML = "";
+        suggestions.replaceChildren();
+        activeIndex = -1;
 
-      if (books.length === 0) {
+        if (!books.length) {
+          showSuggestionMessage(
+            "No matching books"
+          );
+          return;
+        }
 
-        suggestions.innerHTML =
-          `<div class="search-suggestion-empty">No matching books</div>`;
+        books.forEach((book, index) => {
+          const item =
+            document.createElement("a");
+          const title =
+            document.createElement("strong");
+          const author =
+            document.createElement("span");
+
+          item.id =
+            `search-option-${index}`;
+          item.href =
+            `/book/${book.id}`;
+          item.className =
+            "search-suggestion-item";
+          item.setAttribute(
+            "role",
+            "option"
+          );
+          item.setAttribute(
+            "aria-selected",
+            "false"
+          );
+
+          appendHighlighted(
+            title,
+            book.title,
+            query
+          );
+          appendHighlighted(
+            author,
+            book.author || "",
+            query
+          );
+
+          item.append(title, author);
+          suggestions.appendChild(item);
+        });
 
         setSuggestionsOpen(true);
-        return;
-
+      } catch (error) {
+        if (error.name !== "AbortError") {
+          showSuggestionMessage(
+            "Suggestions unavailable"
+          );
+        }
       }
-
-      books.forEach(book => {
-
-        const item =
-          document.createElement("a");
-
-        const title =
-          document.createElement("strong");
-
-        const author =
-          document.createElement("span");
-
-        item.href =
-          `/book/${book.id}`;
-
-        item.className =
-          "search-suggestion-item";
-
-        item.setAttribute(
-          "role",
-          "option"
-        );
-
-        title.textContent =
-          book.title;
-
-        author.textContent =
-          book.author || "";
-
-        item.append(title, author);
-        suggestions.appendChild(item);
-
-      });
-
-      setSuggestionsOpen(true);
-
     }
-  );
 
-  document.addEventListener(
-    "click",
-    (e) => {
-
-      if (
-        !searchInput.contains(e.target) &&
-        !suggestions.contains(e.target)
-      ) {
-        setSuggestionsOpen(false);
+    searchInput.addEventListener(
+      "input",
+      () => {
+        clearTimeout(debounceTimer);
+        debounceTimer =
+          setTimeout(
+            loadSuggestions,
+            250
+          );
       }
+    );
 
-    }
-  );
+    searchInput.addEventListener(
+      "keydown",
+      event => {
+        const items =
+          suggestionItems();
 
-  searchInput.addEventListener(
-    "keydown",
-    (e) => {
-
-      if (e.key === "Escape") {
-        setSuggestionsOpen(false);
+        if (
+          event.key === "ArrowDown" &&
+          items.length
+        ) {
+          event.preventDefault();
+          setActiveSuggestion(
+            activeIndex + 1
+          );
+        } else if (
+          event.key === "ArrowUp" &&
+          items.length
+        ) {
+          event.preventDefault();
+          setActiveSuggestion(
+            activeIndex - 1
+          );
+        } else if (
+          event.key === "Enter" &&
+          activeIndex >= 0
+        ) {
+          event.preventDefault();
+          window.location.assign(
+            items[activeIndex].href
+          );
+        } else if (
+          event.key === "Escape"
+        ) {
+          setSuggestionsOpen(false);
+        }
       }
+    );
 
-    }
-  );
-
-  if (typeof lucide !== "undefined") {
-    lucide.createIcons();
+    document.addEventListener(
+      "click",
+      event => {
+        if (
+          !searchInput.contains(
+            event.target
+          ) &&
+          !suggestions.contains(
+            event.target
+          )
+        ) {
+          setSuggestionsOpen(false);
+        }
+      }
+    );
   }
-
 </script>
 
 <%- include("partials/footer") %>

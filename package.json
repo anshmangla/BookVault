@@ -7,7 +7,9 @@
     "test": "node --test",
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "migrate:google-books": "node scripts/runGoogleBooksMigration.js"
+    "migrate:google-books": "node scripts/runGoogleBooksMigration.js",
+    "migrate:soft-delete": "node scripts/runSoftDeleteMigration.js",
+    "migrate:analytics": "node scripts/runAnalyticsMigration.js"
   },
   "keywords": [],
   "author": "",
