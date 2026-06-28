@@ -1,127 +1,119 @@
 <%- include("partials/header") %>
 
-<div class="card shadow p-4">
+<main class="page-shell">
 
-  <div class="row">
+  <%- include("partials/page-header", {
+    eyebrow: "Your library",
+    icon: "book-open",
+    title: book.title,
+    description: book.author
+      ? `By ${book.author}`
+      : "Author not available",
+    actionHref: `/edit/${book.id}`,
+    actionLabel: "Edit Book",
+    actionIcon: "pencil"
+  }) %>
 
-    <div class="col-md-4">
+  <section class="surface-card book-detail-card">
 
-      <img
-        src="<%= book.cover_url %>"
-        class="img-fluid rounded"
-      >
+    <%- include("partials/book-cover", {
+      book,
+      coverClass: "book-detail-cover",
+      eager: true
+    }) %>
+
+    <div class="book-detail-metadata">
+
+      <dl>
+        <div>
+          <dt>Rating</dt>
+          <dd><%= book.rating ? `${book.rating}/10` : "Not rated" %></dd>
+        </div>
+
+        <div>
+          <dt>ISBN</dt>
+          <dd><%= book.isbn || "Not available" %></dd>
+        </div>
+
+        <div>
+          <dt>Publication year</dt>
+          <dd><%= book.publish_year || "Not available" %></dd>
+        </div>
+
+        <% if (book.publisher) { %>
+          <div>
+            <dt>Publisher</dt>
+            <dd><%= book.publisher %></dd>
+          </div>
+        <% } %>
+
+        <% if (book.page_count) { %>
+          <div>
+            <dt>Length</dt>
+            <dd><%= book.page_count %> pages</dd>
+          </div>
+        <% } %>
+
+        <% if (book.language) { %>
+          <div>
+            <dt>Language</dt>
+            <dd><%= book.language.toUpperCase() %></dd>
+          </div>
+        <% } %>
+
+        <div>
+          <dt>Date read</dt>
+          <dd>
+            <%= book.date_read
+              ? new Date(book.date_read).toLocaleDateString()
+              : "Not recorded" %>
+          </dd>
+        </div>
+      </dl>
 
     </div>
 
-    <div class="col-md-8">
+  </section>
 
-      <h1>
-        <%= book.title %>
-      </h1>
+  <div class="book-detail-sections">
 
-      <h5 class="text-muted">
-        <%= book.author %>
-      </h5>
+    <% if (book.description) { %>
 
-      <hr>
+      <section class="surface-card book-text-section book-description-section">
+        <h2>About this book</h2>
+        <p><%= book.description %></p>
 
-      <p>
+        <% if (
+          Array.isArray(book.categories) &&
+          book.categories.length
+        ) { %>
+          <div class="book-category-list" aria-label="Categories">
+            <% book.categories.forEach(category => { %>
+              <span><%= category %></span>
+            <% }) %>
+          </div>
+        <% } %>
+      </section>
 
-        <strong>
-          Rating:
-        </strong>
+    <% } %>
 
-        ⭐ <%= book.rating || "N/A" %>
+    <section class="surface-card book-text-section">
+      <h2>Notes</h2>
+      <p><%= book.notes || "No notes added yet." %></p>
+    </section>
 
-      </p>
-
-      <p>
-
-        <strong>
-          ISBN:
-        </strong>
-
-        <%= book.isbn || "N/A" %>
-
-      </p>
-
-      <p>
-
-        <strong>
-          Publish Year:
-        </strong>
-
-        <%= book.publish_year || "N/A" %>
-
-      </p>
-
-      <p>
-
-        <strong>
-          Date Read:
-        </strong>
-
-        <%= book.date_read
-        ? new Date(book.date_read)
-        .toLocaleDateString()
-        : "N/A" %>
-
-      </p>
-
-    </div>
+    <section class="surface-card book-text-section">
+      <h2>Review</h2>
+      <p><%= book.review || "No review added yet." %></p>
+    </section>
 
   </div>
 
-</div>
-
-<div class="card shadow mt-4 p-4">
-
-  <h3>
-    Notes
-  </h3>
-
-  <p>
-
-    <%= book.notes || "No notes." %>
-
-  </p>
-
-</div>
-
-<div class="card shadow mt-4 p-4">
-
-  <h3>
-    Review
-  </h3>
-
-  <p>
-
-    <%= book.review || "No review." %>
-
-  </p>
-
-</div>
-
-<div class="mt-4">
-
-  <a
-    href="/edit/<%= book.id %>"
-    class="btn btn-warning"
-  >
-
-    Edit
-
+  <a href="/" class="btn btn-secondary">
+    <i data-lucide="arrow-left" aria-hidden="true"></i>
+    Back to Library
   </a>
 
-  <a
-    href="/"
-    class="btn btn-secondary"
-  >
-
-    Back
-
-  </a>
-
-</div>
+</main>
 
 <%- include("partials/footer") %>

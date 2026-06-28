@@ -4,9 +4,10 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
+    "test": "node --test",
     "start": "node app.js",
-    "end": "nodemon app.js"
+    "dev": "nodemon app.js",
+    "migrate:google-books": "node scripts/runGoogleBooksMigration.js"
   },
   "keywords": [],
   "author": "",

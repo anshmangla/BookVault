@@ -1,0 +1,25 @@
+<%
+  const coverTitle =
+    book.title || "Untitled book";
+  const coverClassName =
+    typeof coverClass !== "undefined" &&
+    coverClass
+      ? coverClass
+      : "";
+%>
+
+<div class="book-cover-frame <%= coverClassName %>">
+
+  <% if (book.cover_url) { %>
+    <img
+      src="<%= book.cover_url %>"
+      alt="<%= coverTitle %> cover"
+      loading="<%= typeof eager !== "undefined" && eager ? "eager" : "lazy" %>">
+  <% } else { %>
+    <div class="book-cover-placeholder">
+      <i data-lucide="book-open" aria-hidden="true"></i>
+      <span>No cover available</span>
+    </div>
+  <% } %>
+
+</div>

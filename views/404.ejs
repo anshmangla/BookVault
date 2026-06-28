@@ -1,16 +1,23 @@
 <%- include("partials/header") %>
 
-<div class="text-center">
+<main class="status-page text-center">
 
-<h1>404</h1>
+<div class="status-page-icon" aria-hidden="true">
+  <i data-lucide="book-x"></i>
+</div>
 
-<p>Page not found.</p>
+<p class="status-page-code">404</p>
 
-<a href="/"
-   class="btn btn-primary">
-  Home
+<h1>Page not found</h1>
+
+<p>
+  <%= message || "The page you requested could not be found." %>
+</p>
+
+<a href="/" class="btn btn-primary">
+  Return to Library
 </a>
 
-</div>
+</main>
 
 <%- include("partials/footer") %>

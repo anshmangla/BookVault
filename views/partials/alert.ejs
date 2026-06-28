@@ -1,0 +1,19 @@
+<%
+  const resolvedAlertType =
+    typeof alertType !== "undefined" && alertType
+      ? alertType
+      : "info";
+  const alertIcon =
+    resolvedAlertType === "danger"
+      ? "circle-alert"
+      : resolvedAlertType === "success"
+        ? "circle-check"
+        : "info";
+%>
+
+<div
+  class="alert alert-<%= resolvedAlertType %>"
+  role="<%= resolvedAlertType === "danger" ? "alert" : "status" %>">
+  <i data-lucide="<%= alertIcon %>" aria-hidden="true"></i>
+  <span><%= alertMessage %></span>
+</div>

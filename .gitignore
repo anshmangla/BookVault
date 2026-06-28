@@ -1,2 +1,15 @@
 ﻿node_modules/
 .env
+test/
+# OS junk
+.DS_Store
+Thumbs.db
+
+# Logs
+npm-debug.log*
+logs/
+*.log
+
+# Build/cache
+.cache/
+dist/

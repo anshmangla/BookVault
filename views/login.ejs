@@ -1,84 +1,63 @@
 <%- include("partials/header") %>
 
-<div class="row justify-content-center">
+<main class="auth-shell">
 
-  <div class="col-md-6">
+  <section class="surface-card auth-card" aria-labelledby="login-title">
 
-    <div class="card shadow p-4">
+    <header class="auth-card-header">
+      <span class="page-header-eyebrow">
+        <i data-lucide="book-open" aria-hidden="true"></i>
+        Welcome back
+      </span>
+      <h1 id="login-title">Log in to BookVault</h1>
+      <p>Continue building your personal reading library.</p>
+    </header>
 
-      <h2 class="mb-4 text-center">
-        Login
-      </h2>
+    <% if (typeof error !== "undefined" && error) { %>
+      <%- include("partials/alert", {
+        alertType: "danger",
+        alertMessage: error
+      }) %>
+    <% } %>
 
-      <form action="/login" method="POST">
+    <form action="/login" method="POST">
 
-        <div class="mb-3">
+      <%- include("partials/form-field", {
+        label: "Email",
+        name: "email",
+        type: "email",
+        autocomplete: "email",
+        fieldRequired: true
+      }) %>
 
-          <label class="form-label">
-            Email
-          </label>
+      <%- include("partials/form-field", {
+        label: "Password",
+        name: "password",
+        type: "password",
+        autocomplete: "current-password",
+        fieldRequired: true
+      }) %>
 
-          <input
-            type="email"
-            name="email"
-            class="form-control"
-            required
-          >
+      <button class="btn btn-primary w-100" type="submit">
+        Log in
+      </button>
 
-        </div>
+    </form>
 
-        <div class="mb-3">
+    <div class="auth-divider">or</div>
 
-          <label class="form-label">
-            Password
-          </label>
+    <a href="/auth/google" class="btn btn-light w-100">
+      <i data-lucide="log-in" aria-hidden="true"></i>
+      Continue with Google
+    </a>
 
-          <input
-            type="password"
-            name="password"
-            class="form-control"
-            required
-          >
+    <p class="auth-footer">
+      Don’t have an account?
+      <a href="/register">Create one</a>
+    </p>
 
-        </div>
+  </section>
 
-        <button
-          class="btn btn-primary w-100"
-          type="submit"
-        >
-          Login
-        </button>
-        <hr>
-
-        <a
-        href="/auth/google"
-        class="
-        btn
-        btn-danger
-        w-100">
-
-        Continue with Google
-
-        </a>
-
-      </form>
-
-      <hr>
-
-      <p class="text-center">
-
-        Don't have an account?
-
-        <a href="/register">
-          Register
-        </a>
-
-      </p>
-
-    </div>
-
-  </div>
-
-</div>
+</main>
 
 <%- include("partials/footer") %>

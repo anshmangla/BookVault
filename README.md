@@ -1,6 +1,6 @@
 # 📚 BookVault
 
-A full-stack book tracking and review platform that helps readers organize their personal library, store notes, write reviews, and track reading history. BookVault automatically fetches book covers using the Open Library API and stores all user data in a PostgreSQL database hosted on Neon.
+A full-stack book tracking and review platform that helps readers organize their personal library, store notes, write reviews, and track reading history. BookVault retrieves book metadata and covers using the Google Books API and stores user data in PostgreSQL.
 
 ## 🚀 Live Demo
 
@@ -14,7 +14,7 @@ A full-stack book tracking and review platform that helps readers organize their
 
 BookVault is a personal reading companion inspired by online book journals. Users can maintain a collection of books they have read, record notes and reviews, assign ratings, and browse their reading history through a clean and responsive interface.
 
-The application integrates with the Open Library API to automatically retrieve book cover images, creating a visually appealing digital bookshelf experience.
+The application integrates with the Google Books API to retrieve titles, authors, ISBNs, publication details, descriptions, categories, and cover images.
 
 ---
 
@@ -36,11 +36,12 @@ The application integrates with the Open Library API to automatically retrieve b
 * Sort books by recently read
 * View all books in a responsive card layout
 
-### Open Library API Integration
+### Google Books API Integration
 
-* Automatically fetches book cover images
-* Handles missing cover images gracefully
-* Retrieves cover data based on title and author
+* Searches the Google Books catalog
+* Imports normalized book metadata and cover images
+* Handles missing fields and cover images gracefully
+* Keeps the Google Books API key on the server
 
 ### Analytics Dashboard
 
@@ -79,7 +80,7 @@ The application integrates with the Open Library API to automatically retrieve b
 
 ### APIs
 
-* Open Library Covers API
+* Google Books API
 
 ### Deployment
 
@@ -97,7 +98,7 @@ Express.js Server
       │
       ├── EJS Templates
       │
-      ├── Open Library API
+      ├── Google Books API
       │
       ▼
 PostgreSQL (Neon)
@@ -148,6 +149,14 @@ CREATE TABLE books (
   notes TEXT,
   review TEXT,
   cover_url TEXT,
+  google_volume_id TEXT,
+  subtitle TEXT,
+  publisher TEXT,
+  published_date TEXT,
+  description TEXT,
+  page_count INTEGER,
+  categories TEXT[],
+  language VARCHAR(16),
   date_read DATE,
   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
@@ -176,6 +185,8 @@ Create a `.env` file in the root directory:
 
 ```env
 DATABASE_URL=your_neon_database_url
+SESSION_SECRET=your_session_secret
+GOOGLE_BOOKS_API_KEY=your_google_books_api_key
 PORT=3000
 ```
 
@@ -203,21 +214,17 @@ http://localhost:3000
 
 ## 🔌 API Used
 
-### Open Library Covers API
+### Google Books API
 
-Used to automatically fetch book cover images.
+Used to search for books and import normalized metadata.
 
 Example:
 
 ```http
-GET https://openlibrary.org/search.json?title=Atomic%20Habits
+GET https://www.googleapis.com/books/v1/volumes?q=Atomic%20Habits&printType=books
 ```
 
-Cover URL Format:
-
-```text
-https://covers.openlibrary.org/b/id/COVER_ID-L.jpg
-```
+The API key is stored as `GOOGLE_BOOKS_API_KEY` and requests are proxied through BookVault’s authenticated server endpoints.
 
 ---
 

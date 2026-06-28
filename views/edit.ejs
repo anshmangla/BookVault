@@ -1,132 +1,117 @@
 <%- include("partials/header") %>
 
-    <div class="card p-4 shadow">
+<main class="page-shell">
 
-        <h2 class="mb-4">
-            Edit Book
+  <%- include("partials/page-header", {
+    eyebrow: "Library",
+    icon: "pencil",
+    title: "Edit book",
+    description: `Update the details and reading notes for ${book.title}.`
+  }) %>
+
+  <section class="surface-card form-card" aria-label="Edit book details">
+
+    <form
+      action="/edit/<%= book.id %>?_method=PUT"
+      method="POST">
+
+      <section class="form-section" aria-labelledby="book-information">
+        <h2 class="form-section-title" id="book-information">
+          Book information
         </h2>
 
-        <form
-            action="/edit/<%= book.id %>?_method=PUT"
-            method="POST"
-        >
+        <%- include("partials/form-field", {
+          label: "Title",
+          name: "title",
+          value: book.title,
+          fieldRequired: true
+        }) %>
 
-            <div class="mb-3">
+        <%- include("partials/form-field", {
+          label: "Author",
+          name: "author",
+          value: book.author || ""
+        }) %>
 
-                <label class="form-label">
-                    Title
-                </label>
+        <%- include("partials/form-field", {
+          label: "ISBN",
+          name: "isbn",
+          value: book.isbn || "",
+          helpText: "ISBN-10 or ISBN-13"
+        }) %>
 
-                <input
-                    type="text"
-                    name="title"
-                    class="form-control"
-                    value="<%= book.title %>"
-                    required
-                >
+        <%- include("partials/form-field", {
+          label: "Publication year",
+          name: "publish_year",
+          type: "number",
+          value: book.publish_year || "",
+          min: 1,
+          max: new Date().getFullYear() + 1
+        }) %>
+      </section>
 
-            </div>
+      <section class="form-section" aria-labelledby="reading-details">
+        <h2 class="form-section-title" id="reading-details">
+          Reading details
+        </h2>
 
-            <div class="mb-3">
+        <%- include("partials/form-field", {
+          label: "Rating",
+          name: "rating",
+          type: "number",
+          value: book.rating || "",
+          min: 1,
+          max: 10,
+          helpText: "Choose a rating from 1 to 10."
+        }) %>
 
-                <label class="form-label">
-                    Author
-                </label>
+        <%- include("partials/form-field", {
+          label: "Date read",
+          name: "date_read",
+          type: "date",
+          value: book.date_read
+            ? new Date(book.date_read).toISOString().split("T")[0]
+            : ""
+        }) %>
+      </section>
 
-                <input
-                    type="text"
-                    name="author"
-                    class="form-control"
-                    value="<%= book.author %>"
-                >
+      <section class="form-section" aria-labelledby="your-thoughts">
+        <h2 class="form-section-title" id="your-thoughts">
+          Your thoughts
+        </h2>
 
-            </div>
+        <%- include("partials/form-field", {
+          label: "Private notes",
+          name: "notes",
+          type: "textarea",
+          rows: 4,
+          value: book.notes || ""
+        }) %>
 
-            <div class="mb-3">
+        <%- include("partials/form-field", {
+          label: "Review",
+          name: "review",
+          type: "textarea",
+          rows: 5,
+          value: book.review || ""
+        }) %>
+      </section>
 
-                <label class="form-label">
-                    ISBN
-                </label>
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">
+          <i data-lucide="check" aria-hidden="true"></i>
+          Update Book
+        </button>
 
-                <input
-                    type="text"
-                    name="isbn"
-                    class="form-control"
-                    value="<%= book.isbn || '' %>"
-                >
+        <a href="/book/<%= book.id %>" class="btn btn-secondary">
+          Cancel
+        </a>
+      </div>
 
-            </div>
+    </form>
 
-            <div class="mb-3">
+  </section>
 
-                <label class="form-label">
-                    Rating
-                </label>
-
-                <input
-                    type="number"
-                    min="1"
-                    max="10"
-                    name="rating"
-                    class="form-control"
-                    value="<%= book.rating %>"
-                >
-
-            </div>
-
-            <div class="mb-3">
-
-                <label class="form-label">
-                    Date Read
-                </label>
-
-                <input
-                    type="date"
-                    name="date_read"
-                    class="form-control"
-                    value="<%= book.date_read ? book.date_read.toISOString().split('T')[0] : '' %>"
-                >
-
-            </div>
-
-            <div class="mb-3">
-
-                <label class="form-label">
-                    Notes
-                </label>
-
-                <textarea
-                    name="notes"
-                    rows="4"
-                    class="form-control"
-                ><%= book.notes %></textarea>
-
-            </div>
-
-            <div class="mb-3">
-
-                <label class="form-label">
-                    Review
-                </label>
-
-                <textarea
-                    name="review"
-                    rows="5"
-                    class="form-control"
-                ><%= book.review %></textarea>
-
-            </div>
-
-            <button class="btn btn-primary">
-                Update Book
-            </button>
-
-            <a href="/" class="btn btn-secondary">
-                Cancel
-            </a>
-
-        </form>
-
-    </div>
+</main>
 
 <%- include("partials/footer") %>

@@ -1,0 +1,23 @@
+<%- include("partials/header") %>
+
+<main class="status-page text-center">
+
+  <div class="status-page-icon" aria-hidden="true">
+    <i data-lucide="circle-alert"></i>
+  </div>
+
+  <p class="status-page-code">500</p>
+
+  <h1>Something went wrong</h1>
+
+  <p>
+    <%= message || "We could not complete that request. Please try again." %>
+  </p>
+
+  <a href="/" class="btn btn-primary">
+    Return to Library
+  </a>
+
+</main>
+
+<%- include("partials/footer") %>

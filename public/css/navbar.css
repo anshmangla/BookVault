@@ -1,0 +1,203 @@
+.modern-navbar{
+
+    position:sticky;
+    
+    top:0;
+    
+    z-index:999;
+    
+    background:
+    
+    rgba(255,255,255,.8);
+    
+    backdrop-filter:blur(18px);
+    
+    padding:16px 0;
+    
+    border-bottom:
+    
+    1px solid rgba(0,0,0,.05);
+    
+    }
+    
+    .logo{
+    
+    display:flex;
+    
+    align-items:center;
+    
+    gap:10px;
+    
+    font-weight:800;
+    
+    font-size:1.5rem;
+    
+    color:
+    
+    var(--primary);
+    
+    }
+    
+    .logo svg{
+    
+    width:30px;
+    
+    height:30px;
+    
+    }
+    
+    .nav-link{
+    
+    display:flex;
+    
+    align-items:center;
+    
+    gap:8px;
+    
+    padding:10px 16px !important;
+    
+    border-radius:12px;
+    
+    font-weight:600;
+    
+    color:
+    
+    var(--text);
+    
+    transition:
+    
+    var(--transition);
+    
+    }
+    
+    .nav-link:hover{
+    
+    background:
+    
+    #EEF2FF;
+    
+    color:
+    
+    var(--primary);
+    
+    }
+
+    .nav-link.active{
+
+    background:#EEF2FF;
+
+    color:var(--primary);
+
+    }
+
+    .navbar-actions{
+
+    display:flex;
+
+    align-items:center;
+
+    gap:8px;
+
+    }
+
+    .theme-toggle{
+
+    width:44px;
+
+    padding:10px;
+
+    }
+    
+    .dropdown-menu{
+    
+    border:none;
+    
+    border-radius:18px;
+    
+    padding:12px;
+    
+    box-shadow:
+    
+    var(--shadow);
+    
+    }
+    
+    .dropdown-item{
+    
+    padding:10px;
+    
+    border-radius:10px;
+    
+    }
+    
+    .dropdown-item:hover{
+    
+    background:
+    
+    #EEF2FF;
+    
+    }
+    
+    html.dark .modern-navbar{
+    
+    background:
+    
+    rgba(15,23,42,.75);
+    
+    border-bottom:
+    
+    1px solid #334155;
+    
+    }
+
+    html.dark .logo{
+
+    color:#818CF8;
+
+    }
+
+    html.dark .navbar-toggler{
+
+    border-color:#475569;
+
+    }
+
+    html.dark .navbar-toggler-icon{
+
+    filter:invert(1);
+
+    }
+    
+    html.dark .nav-link:hover{
+    
+    background:#334155;
+    
+    }
+
+    html.dark .nav-link.active{
+
+    background:#334155;
+
+    color:#A5B4FC;
+
+    }
+
+    @media (max-width:991.98px){
+
+    .navbar-actions{
+
+    align-items:stretch;
+
+    flex-direction:column;
+
+    margin-top:16px;
+
+    }
+
+    .navbar-actions .theme-toggle{
+
+    width:100%;
+
+    }
+
+    }

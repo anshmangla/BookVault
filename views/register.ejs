@@ -1,87 +1,57 @@
 <%- include("partials/header") %>
 
-<div class="row justify-content-center">
+<main class="auth-shell">
 
-  <div class="col-md-6">
+  <section class="surface-card auth-card" aria-labelledby="register-title">
 
-    <div class="card shadow p-4">
+    <header class="auth-card-header">
+      <span class="page-header-eyebrow">
+        <i data-lucide="library-big" aria-hidden="true"></i>
+        Start your library
+      </span>
+      <h1 id="register-title">Create your account</h1>
+      <p>Keep your books, notes, reviews, and reading history together.</p>
+    </header>
 
-      <h2 class="mb-4 text-center">
-        Register
-      </h2>
+    <form action="/register" method="POST">
 
-      <form action="/register" method="POST">
+      <%- include("partials/form-field", {
+        label: "Username",
+        name: "username",
+        autocomplete: "username",
+        fieldRequired: true
+      }) %>
 
-        <div class="mb-3">
+      <%- include("partials/form-field", {
+        label: "Email",
+        name: "email",
+        type: "email",
+        autocomplete: "email",
+        fieldRequired: true
+      }) %>
 
-          <label class="form-label">
-            Username
-          </label>
+      <%- include("partials/form-field", {
+        label: "Password",
+        name: "password",
+        type: "password",
+        autocomplete: "new-password",
+        helpText: "Use a password you do not reuse on other websites.",
+        fieldRequired: true
+      }) %>
 
-          <input
-            type="text"
-            name="username"
-            class="form-control"
-            required
-          >
+      <button class="btn btn-primary w-100" type="submit">
+        Create account
+      </button>
 
-        </div>
+    </form>
 
-        <div class="mb-3">
+    <p class="auth-footer">
+      Already have an account?
+      <a href="/login">Log in</a>
+    </p>
 
-          <label class="form-label">
-            Email
-          </label>
+  </section>
 
-          <input
-            type="email"
-            name="email"
-            class="form-control"
-            required
-          >
-
-        </div>
-
-        <div class="mb-3">
-
-          <label class="form-label">
-            Password
-          </label>
-
-          <input
-            type="password"
-            name="password"
-            class="form-control"
-            required
-          >
-
-        </div>
-
-        <button
-          class="btn btn-success w-100"
-          type="submit"
-        >
-          Register
-        </button>
-
-      </form>
-
-      <hr>
-
-      <p class="text-center">
-
-        Already have an account?
-
-        <a href="/login">
-          Login
-        </a>
-
-      </p>
-
-    </div>
-
-  </div>
-
-</div>
+</main>
 
 <%- include("partials/footer") %>

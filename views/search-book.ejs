@@ -1,146 +1,795 @@
 <%- include("partials/header") %>
 
-<div class="container mt-5">
+<main class="page-shell add-flow">
 
-  <h2>Add New Book</h2>
+  <%- include("partials/page-header", {
+    eyebrow: "Your library",
+    icon: "book-plus",
+    title: "Add a book",
+    description: "Find a Google Books edition or enter the details manually, then record your reading."
+  }) %>
 
-  <div class="position-relative">
+  <ol class="add-flow-steps" aria-label="Add book progress">
+    <li class="active" data-flow-step="search" aria-current="step">
+      <span>1</span>
+      Find a book
+    </li>
+    <li data-flow-step="details">
+      <span>2</span>
+      Review details
+    </li>
+    <li data-flow-step="reading">
+      <span>3</span>
+      Add reading
+    </li>
+  </ol>
 
-    <input
-      type="text"
-      id="bookSearch"
-      class="form-control"
-      placeholder="Search any book..."
-      autocomplete="off">
+  <section
+    class="surface-card add-flow-panel"
+    id="searchStep"
+    aria-labelledby="search-step-title">
 
-    <div
-      id="suggestions"
-      class="list-group position-absolute w-100"
-      style="
-        z-index:1000;
-        display:none;
-      ">
+    <div class="add-flow-panel-header">
+      <div>
+        <p class="add-flow-kicker">Step 1</p>
+        <h2 id="search-step-title">Find the right edition</h2>
+        <p>Search by title, author, or ISBN.</p>
+      </div>
     </div>
 
-  </div>
+    <form id="googleBooksSearchForm" class="google-books-search">
 
-</div>
+      <div class="google-books-search-type">
+        <label class="form-label" for="searchBy">Search by</label>
+        <select id="searchBy" class="form-select">
+          <option value="all">Everything</option>
+          <option value="title">Title</option>
+          <option value="author">Author</option>
+          <option value="isbn">ISBN</option>
+        </select>
+      </div>
+
+      <div class="google-books-search-query">
+        <label class="form-label" for="bookSearch">Search Google Books</label>
+        <div class="discovery-search-control">
+          <i data-lucide="search" aria-hidden="true"></i>
+          <input
+            type="search"
+            id="bookSearch"
+            class="form-control"
+            placeholder="Try The Hobbit or 9780547928227"
+            autocomplete="off"
+            minlength="3"
+            required>
+        </div>
+      </div>
+
+      <button class="btn btn-primary google-books-search-submit" type="submit">
+        <i data-lucide="search" aria-hidden="true"></i>
+        Search
+      </button>
+
+    </form>
+
+    <div class="add-flow-manual">
+      <span>Can’t find the right book?</span>
+      <button class="btn btn-light" type="button" id="manualEntryButton">
+        <i data-lucide="pencil-line" aria-hidden="true"></i>
+        Enter Manually
+      </button>
+    </div>
+
+    <p
+      class="add-flow-status visually-hidden"
+      id="searchStatus"
+      role="status"
+      aria-live="polite">
+    </p>
+
+    <div
+      class="google-books-results"
+      id="googleBooksResults"
+      role="list"
+      aria-label="Google Books search results"
+      hidden>
+    </div>
+
+    <div class="add-flow-load-more" id="loadMoreContainer" hidden>
+      <button class="btn btn-light" type="button" id="loadMoreButton">
+        Load More Results
+      </button>
+    </div>
+
+  </section>
+
+  <section
+    class="add-flow-panel"
+    id="detailsStep"
+    aria-labelledby="details-step-title"
+    hidden>
+
+    <div class="add-flow-selection surface-card">
+      <div class="add-flow-selected-cover" id="selectedCover" aria-hidden="true">
+        <i data-lucide="book-open"></i>
+      </div>
+
+      <div>
+        <p class="add-flow-kicker" id="selectedSource">Selected book</p>
+        <h2 id="selectedTitle">Book details</h2>
+        <p id="selectedAuthor"></p>
+      </div>
+
+      <button class="btn btn-light" type="button" id="changeBookButton">
+        <i data-lucide="refresh-cw" aria-hidden="true"></i>
+        Change Book
+      </button>
+    </div>
+
+    <form
+      action="/add"
+      method="POST"
+      class="surface-card form-card add-flow-form"
+      id="addBookForm">
+
+      <input
+        id="google_volume_id"
+        type="hidden"
+        name="google_volume_id">
+
+      <section
+        class="form-section"
+        id="bookDetailsSection"
+        aria-labelledby="details-step-title">
+        <p class="add-flow-kicker">Step 2</p>
+        <h2 class="form-section-title" id="details-step-title">
+          Review book details
+        </h2>
+
+        <div class="form-grid">
+          <div class="form-grid-full">
+            <%- include("partials/form-field", {
+              label: "Title",
+              name: "title",
+              id: "title",
+              autocomplete: "off",
+              fieldRequired: true
+            }) %>
+          </div>
+
+          <div class="form-grid-full">
+            <%- include("partials/form-field", {
+              label: "Author",
+              name: "author",
+              id: "author",
+              autocomplete: "off"
+            }) %>
+          </div>
+
+          <%- include("partials/form-field", {
+            label: "ISBN",
+            name: "isbn",
+            id: "isbn",
+            autocomplete: "off",
+            helpText: "ISBN-10 or ISBN-13"
+          }) %>
+
+          <%- include("partials/form-field", {
+            label: "Publication year",
+            name: "publish_year",
+            id: "publish_year",
+            type: "number",
+            min: 1,
+            max: new Date().getFullYear() + 1
+          }) %>
+        </div>
+      </section>
+
+      <section
+        class="form-section"
+        id="readingSection"
+        aria-labelledby="reading-step-title">
+        <p class="add-flow-kicker">Step 3</p>
+        <h2 class="form-section-title" id="reading-step-title">
+          Add your reading
+        </h2>
+
+        <div class="form-grid">
+          <%- include("partials/form-field", {
+            label: "Rating",
+            name: "rating",
+            type: "number",
+            min: 1,
+            max: 10,
+            helpText: "Optional · Choose a rating from 1 to 10."
+          }) %>
+
+          <%- include("partials/form-field", {
+            label: "Date read",
+            name: "date_read",
+            type: "date"
+          }) %>
+
+          <div class="form-grid-full">
+            <%- include("partials/form-field", {
+              label: "Private notes",
+              name: "notes",
+              type: "textarea",
+              rows: 4,
+              helpText: "Capture quotes, ideas, or anything you want to remember."
+            }) %>
+          </div>
+
+          <div class="form-grid-full">
+            <%- include("partials/form-field", {
+              label: "Review",
+              name: "review",
+              type: "textarea",
+              rows: 5,
+              helpText: "Write your overall opinion of the book."
+            }) %>
+          </div>
+        </div>
+      </section>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit" id="saveBookButton">
+          <i data-lucide="check" aria-hidden="true"></i>
+          Save to Library
+        </button>
+
+        <a href="/" class="btn btn-secondary">
+          Cancel
+        </a>
+      </div>
+
+    </form>
+
+  </section>
+
+</main>
 
 <script>
+  const searchForm =
+    document.getElementById(
+      "googleBooksSearchForm"
+    );
+  const searchInput =
+    document.getElementById("bookSearch");
+  const searchBy =
+    document.getElementById("searchBy");
+  const searchButton =
+    searchForm.querySelector(
+      'button[type="submit"]'
+    );
+  const searchStep =
+    document.getElementById("searchStep");
+  const detailsStep =
+    document.getElementById("detailsStep");
+  const results =
+    document.getElementById(
+      "googleBooksResults"
+    );
+  const searchStatus =
+    document.getElementById("searchStatus");
+  const manualEntryButton =
+    document.getElementById(
+      "manualEntryButton"
+    );
+  const changeBookButton =
+    document.getElementById(
+      "changeBookButton"
+    );
+  const loadMoreContainer =
+    document.getElementById(
+      "loadMoreContainer"
+    );
+  const loadMoreButton =
+    document.getElementById(
+      "loadMoreButton"
+    );
+  const addBookForm =
+    document.getElementById("addBookForm");
+  const saveBookButton =
+    document.getElementById(
+      "saveBookButton"
+    );
 
-const input =
-document.getElementById(
-"bookSearch"
-);
+  let activeQuery = "";
+  let activeSearchBy = "all";
+  let nextStartIndex = 0;
+  let totalItems = 0;
+  let renderedBooks = 0;
 
-const suggestions =
-document.getElementById(
-"suggestions"
-);
+  function renderIcons() {
+    if (typeof lucide !== "undefined") {
+      lucide.createIcons();
+    }
+  }
 
-let debounce;
+  function setProgress(step) {
+    const order = [
+      "search",
+      "details",
+      "reading"
+    ];
+    const currentIndex =
+      order.indexOf(step);
 
-input.addEventListener(
-"input",
-()=>{
+    document
+      .querySelectorAll("[data-flow-step]")
+      .forEach((item, index) => {
+        item.classList.toggle(
+          "active",
+          index <= currentIndex
+        );
 
-clearTimeout(
-debounce
-);
+        if (index === currentIndex) {
+          item.setAttribute(
+            "aria-current",
+            "step"
+          );
+        } else {
+          item.removeAttribute(
+            "aria-current"
+          );
+        }
+      });
+  }
 
-debounce =
-setTimeout(
-searchBooks,
-400
-);
+  function showLoading(append) {
+    searchStatus.textContent =
+      append
+        ? "Loading more Google Books results."
+        : "Searching Google Books.";
 
-}
-);
+    if (!append) {
+      results.innerHTML = `
+        <div class="google-book-skeleton" aria-hidden="true"></div>
+        <div class="google-book-skeleton" aria-hidden="true"></div>
+        <div class="google-book-skeleton" aria-hidden="true"></div>
+      `;
+      results.hidden = false;
+    }
 
-async function searchBooks(){
+    searchButton.disabled = true;
+    loadMoreButton.disabled = true;
+  }
 
-const query =
-input.value.trim();
+  function showMessage(message, type) {
+    results.replaceChildren();
 
-if(
-query.length < 3
-){
+    const state =
+      document.createElement("div");
+    const icon =
+      document.createElement("i");
+    const title =
+      document.createElement("strong");
+    const text =
+      document.createElement("p");
+    const manualButton =
+      document.createElement("button");
 
-suggestions.style.display =
-"none";
+    state.className =
+      `google-books-message ${type || ""}`;
+    icon.setAttribute(
+      "data-lucide",
+      type === "error"
+        ? "circle-alert"
+        : "search-x"
+    );
+    icon.setAttribute("aria-hidden", "true");
+    title.textContent =
+      type === "error"
+        ? "Search unavailable"
+        : "No matching books";
+    text.textContent = message;
+    manualButton.type = "button";
+    manualButton.className =
+      "btn btn-light";
+    manualButton.textContent =
+      "Enter Book Manually";
+    manualButton.addEventListener(
+      "click",
+      () => showBookForm(null)
+    );
 
-return;
+    state.append(
+      icon,
+      title,
+      text,
+      manualButton
+    );
+    results.appendChild(state);
+    results.hidden = false;
+    renderIcons();
+  }
 
-}
+  function createResult(book) {
+    const card =
+      document.createElement("article");
+    const cover =
+      book.cover_url
+        ? document.createElement("img")
+        : document.createElement("div");
+    const content =
+      document.createElement("div");
+    const title =
+      document.createElement("h3");
+    const author =
+      document.createElement("p");
+    const metadata =
+      document.createElement("p");
+    const actions =
+      document.createElement("div");
 
-const response =
-await fetch(
-`/api/openlibrary-search?q=${encodeURIComponent(query)}`
-);
+    card.className =
+      "google-book-result";
+    card.setAttribute("role", "listitem");
 
-const books =
-await response.json();
+    if (book.cover_url) {
+      cover.src = book.cover_url;
+      cover.alt = "";
+      cover.loading = "lazy";
+      cover.className =
+        "google-book-result-cover";
+    } else {
+      cover.className =
+        "google-book-result-cover google-book-result-placeholder";
+      cover.setAttribute(
+        "aria-hidden",
+        "true"
+      );
+      cover.textContent = "No cover";
+    }
 
-suggestions.innerHTML =
-"";
+    content.className =
+      "google-book-result-content";
+    title.textContent = book.title;
+    author.textContent =
+      book.author || "Unknown author";
+    metadata.textContent = [
+      book.published_date,
+      book.publisher,
+      book.isbn
+        ? `ISBN ${book.isbn}`
+        : ""
+    ].filter(Boolean).join(" · ");
 
-if(
-books.length === 0
-){
+    content.append(title, author);
 
-suggestions.style.display =
-"none";
+    if (book.subtitle) {
+      const subtitle =
+        document.createElement("p");
+      subtitle.className =
+        "google-book-result-subtitle";
+      subtitle.textContent = book.subtitle;
+      content.appendChild(subtitle);
+    }
 
-return;
+    if (metadata.textContent) {
+      content.appendChild(metadata);
+    }
 
-}
+    actions.className =
+      "google-book-result-actions";
 
-books.forEach(book=>{
+    if (book.duplicate) {
+      const badge =
+        document.createElement("span");
+      const existingLink =
+        document.createElement("a");
 
-const item =
-document.createElement(
-"a"
-);
+      badge.className =
+        "duplicate-badge";
+      badge.textContent =
+        "Already in your library";
+      existingLink.href =
+        `/book/${book.duplicate.id}`;
+      existingLink.className =
+        "btn btn-light";
+      existingLink.textContent =
+        "View Book";
+      actions.append(badge, existingLink);
+    } else {
+      const selectButton =
+        document.createElement("button");
 
-item.href="#";
+      selectButton.type = "button";
+      selectButton.className =
+        "btn btn-primary";
+      selectButton.textContent =
+        "Select Edition";
+      selectButton.setAttribute(
+        "aria-label",
+        `Select ${book.title}`
+      );
+      selectButton.addEventListener(
+        "click",
+        () => showBookForm(book)
+      );
+      actions.appendChild(selectButton);
+    }
 
-item.className =
-"list-group-item list-group-item-action";
+    card.append(
+      cover,
+      content,
+      actions
+    );
 
-item.innerHTML =
-`
-<strong>
-${book.title}
-</strong>
-<br>
-<small>
-${book.author}
-</small>
-`;
+    return card;
+  }
 
-item.onclick = ()=>{
+  function renderResults(books, append) {
+    if (!append) {
+      results.replaceChildren();
+      renderedBooks = 0;
+    }
 
-localStorage.setItem(
-"selectedBook",
-JSON.stringify(book)
-);
+    books.forEach(book => {
+      results.appendChild(
+        createResult(book)
+      );
+    });
 
-window.location =
-"/add";
+    renderedBooks += books.length;
+    results.hidden = false;
+    searchStatus.textContent =
+      `${renderedBooks} book ${renderedBooks === 1 ? "result" : "results"} shown.`;
 
-};
+    loadMoreContainer.hidden =
+      renderedBooks >= totalItems ||
+      books.length === 0;
+  }
 
-suggestions.appendChild(
-item
-);
+  async function searchBooks({
+    append = false
+  } = {}) {
+    const query =
+      append
+        ? activeQuery
+        : searchInput.value.trim();
+    const mode =
+      append
+        ? activeSearchBy
+        : searchBy.value;
 
-});
+    if (query.length < 3) {
+      searchInput.focus();
+      return;
+    }
 
-suggestions.style.display =
-"block";
+    if (
+      mode === "isbn" &&
+      query
+        .replace(/[^0-9X]/gi, "")
+        .length < 10
+    ) {
+      showMessage(
+        "Enter a complete ISBN-10 or ISBN-13.",
+        "empty"
+      );
+      searchStatus.textContent =
+        "A complete ISBN is required.";
+      searchInput.focus();
+      return;
+    }
 
-}
+    if (!append) {
+      activeQuery = query;
+      activeSearchBy = mode;
+      nextStartIndex = 0;
+    }
 
+    showLoading(append);
+
+    try {
+      const params =
+        new URLSearchParams({
+          q: activeQuery,
+          searchBy: activeSearchBy,
+          startIndex:
+            String(nextStartIndex),
+          maxResults: "12"
+        });
+
+      const response =
+        await fetch(
+          `/api/google-books/search?${params}`
+        );
+      const result =
+        await response.json();
+
+      if (!response.ok) {
+        throw new Error(
+          result.error ||
+          "Google Books could not be reached."
+        );
+      }
+
+      totalItems =
+        result.totalItems || 0;
+      nextStartIndex +=
+        (result.books || []).length;
+
+      if (
+        !append &&
+        (!result.books ||
+          result.books.length === 0)
+      ) {
+        showMessage(
+          "Try a broader search or enter the book manually.",
+          "empty"
+        );
+        searchStatus.textContent =
+          "No matching books found.";
+        return;
+      }
+
+      renderResults(
+        result.books || [],
+        append
+      );
+    } catch (error) {
+      if (!append) {
+        showMessage(
+          error.message ||
+          "Try again or enter the book manually.",
+          "error"
+        );
+      }
+
+      searchStatus.textContent =
+        "Google Books search failed.";
+    } finally {
+      searchButton.disabled = false;
+      loadMoreButton.disabled = false;
+    }
+  }
+
+  function showBookForm(book) {
+    const isGoogleBook =
+      Boolean(book);
+
+    document.getElementById(
+      "google_volume_id"
+    ).value =
+      book?.google_volume_id || "";
+    document.getElementById(
+      "title"
+    ).value =
+      book?.title || "";
+    document.getElementById(
+      "author"
+    ).value =
+      book?.author || "";
+    document.getElementById(
+      "isbn"
+    ).value =
+      book?.isbn || "";
+    document.getElementById(
+      "publish_year"
+    ).value =
+      book?.publish_year || "";
+
+    document.getElementById(
+      "selectedSource"
+    ).textContent =
+      isGoogleBook
+        ? "Selected from Google Books"
+        : "Manual entry";
+    document.getElementById(
+      "selectedTitle"
+    ).textContent =
+      book?.title || "Enter book details";
+    document.getElementById(
+      "selectedAuthor"
+    ).textContent =
+      book?.author ||
+      "Add the information you know.";
+
+    const selectedCover =
+      document.getElementById(
+        "selectedCover"
+      );
+
+    selectedCover.replaceChildren();
+
+    if (book?.cover_url) {
+      const image =
+        document.createElement("img");
+      image.src = book.cover_url;
+      image.alt = "";
+      selectedCover.appendChild(image);
+    } else {
+      const icon =
+        document.createElement("i");
+      icon.setAttribute(
+        "data-lucide",
+        "book-open"
+      );
+      icon.setAttribute(
+        "aria-hidden",
+        "true"
+      );
+      selectedCover.appendChild(icon);
+    }
+
+    searchStep.hidden = true;
+    detailsStep.hidden = false;
+    setProgress("details");
+    renderIcons();
+
+    document.getElementById(
+      "title"
+    ).focus({ preventScroll: true });
+    detailsStep.scrollIntoView({
+      behavior: "smooth",
+      block: "start"
+    });
+  }
+
+  searchForm.addEventListener(
+    "submit",
+    event => {
+      event.preventDefault();
+      searchBooks();
+    }
+  );
+
+  loadMoreButton.addEventListener(
+    "click",
+    () => searchBooks({ append: true })
+  );
+
+  manualEntryButton.addEventListener(
+    "click",
+    () => showBookForm(null)
+  );
+
+  changeBookButton.addEventListener(
+    "click",
+    () => {
+      detailsStep.hidden = true;
+      searchStep.hidden = false;
+      setProgress("search");
+      searchInput.focus();
+      searchStep.scrollIntoView({
+        behavior: "smooth",
+        block: "start"
+      });
+    }
+  );
+
+  document
+    .getElementById("bookDetailsSection")
+    .addEventListener(
+      "focusin",
+      () => setProgress("details")
+    );
+
+  document
+    .getElementById("readingSection")
+    .addEventListener(
+      "focusin",
+      () => setProgress("reading")
+    );
+
+  addBookForm.addEventListener(
+    "submit",
+    () => {
+      saveBookButton.disabled = true;
+      saveBookButton.innerHTML =
+        '<span class="button-spinner" aria-hidden="true"></span> Saving Book…';
+    }
+  );
+
+  if (
+    new URLSearchParams(
+      window.location.search
+    ).get("manual") === "1"
+  ) {
+    showBookForm(null);
+  }
 </script>
 
 <%- include("partials/footer") %>

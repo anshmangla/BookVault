@@ -1,19 +1,111 @@
 const express = require("express");
 const router = express.Router();
 
-const axios = require("axios");
 const db = require("../db");
+const {
+  getVolume,
+  searchVolumes
+} = require("../services/googleBooks");
 
 const isAuthenticated =
   require("../middleware/auth");
 
-/*
-====================================
-PROTECT ALL ROUTES
-====================================
-*/
+function calculateLibraryStats(books) {
+  const ratedBooks =
+    books.filter(
+      book =>
+        book.rating !== null &&
+        book.rating !== undefined
+    );
 
-router.use(isAuthenticated);
+  const avgRating =
+    ratedBooks.length > 0
+      ? (
+          ratedBooks.reduce(
+            (sum, book) =>
+              sum + Number(book.rating),
+            0
+          ) / ratedBooks.length
+        ).toFixed(1)
+      : 0;
+
+  const topBook =
+    ratedBooks.length > 0
+      ? ratedBooks.reduce((top, book) =>
+          Number(book.rating) >
+          Number(top.rating)
+            ? book
+            : top
+        )
+      : null;
+
+  return {
+    totalBooks: books.length,
+    avgRating,
+    topBook
+  };
+}
+
+async function addDuplicateInfo(
+  books,
+  userId
+) {
+  if (!books.length) {
+    return books;
+  }
+
+  const volumeIds =
+    books
+      .map(book => book.google_volume_id)
+      .filter(Boolean);
+
+  const isbns =
+    books
+      .map(book => book.isbn)
+      .filter(Boolean);
+
+  const result = await db.query(
+    `
+    SELECT
+      id,
+      title,
+      google_volume_id,
+      isbn
+    FROM books
+    WHERE user_id = $1
+    AND (
+      google_volume_id = ANY($2::text[])
+      OR isbn = ANY($3::text[])
+    )
+    `,
+    [userId, volumeIds, isbns]
+  );
+
+  return books.map(book => {
+    const duplicate =
+      result.rows.find(existing =>
+        (
+          book.google_volume_id &&
+          existing.google_volume_id ===
+            book.google_volume_id
+        ) ||
+        (
+          book.isbn &&
+          existing.isbn === book.isbn
+        )
+      );
+
+    return {
+      ...book,
+      duplicate: duplicate
+        ? {
+            id: duplicate.id,
+            title: duplicate.title
+          }
+        : null
+    };
+  });
+}
 
 /*
 ====================================
@@ -21,7 +113,7 @@ HOME PAGE
 ====================================
 */
 
-router.get("/", async (req, res) => {
+router.get("/", isAuthenticated, async (req, res, next) => {
   try {
 
     const sort = req.query.sort;
@@ -59,30 +151,14 @@ router.get("/", async (req, res) => {
 
     const books = result.rows;
 
-    const totalBooks = books.length;
-
-    const avgRating =
-      books.length > 0
-        ? (
-            books.reduce(
-              (sum, b) =>
-                sum + (b.rating || 0),
-              0
-            ) / books.length
-          ).toFixed(1)
-        : 0;
-
-    const topBook =
-      books.length > 0
-        ? books.reduce((a, b) =>
-            (a.rating || 0) >
-            (b.rating || 0)
-              ? a
-              : b
-          )
-        : null;
+    const {
+      totalBooks,
+      avgRating,
+      topBook
+    } = calculateLibraryStats(books);
 
     res.render("index", {
+      pageTitle: "My Library",
       books,
       totalBooks,
       avgRating,
@@ -90,12 +166,7 @@ router.get("/", async (req, res) => {
     });
 
   } catch (err) {
-
-    console.error(err);
-
-    res
-      .status(500)
-      .send("Failed to load books.");
+    next(err);
 
   }
 });
@@ -106,7 +177,7 @@ SEARCH BOOKS
 ====================================
 */
 
-router.get("/search", async (req, res) => {
+router.get("/search", isAuthenticated, async (req, res, next) => {
   try {
 
     const searchTerm =
@@ -136,31 +207,16 @@ router.get("/search", async (req, res) => {
     const books =
       result.rows;
 
-    const totalBooks =
-      books.length;
-
-    const avgRating =
-      books.length > 0
-        ? (
-            books.reduce(
-              (sum, b) =>
-                sum + (b.rating || 0),
-              0
-            ) / books.length
-          ).toFixed(1)
-        : 0;
-
-    const topBook =
-      books.length > 0
-        ? books.reduce((a, b) =>
-            (a.rating || 0) >
-            (b.rating || 0)
-              ? a
-              : b
-          )
-        : null;
+    const {
+      totalBooks,
+      avgRating,
+      topBook
+    } = calculateLibraryStats(books);
 
     res.render("index", {
+      pageTitle: searchTerm
+        ? `Search: ${searchTerm}`
+        : "My Library",
       books,
       totalBooks,
       avgRating,
@@ -168,84 +224,92 @@ router.get("/search", async (req, res) => {
     });
 
   } catch (err) {
-
-    console.error(err);
-
-    res
-      .status(500)
-      .send("Search failed.");
+    next(err);
 
   }
 });
 
-router.get("/search-book", (req, res) => {
-  res.render("search-book");
+router.get("/search-book", isAuthenticated, (req, res) => {
+  res.render("search-book", {
+    pageTitle: "Add Book"
+  });
 });
 
 router.get(
-  "/api/openlibrary-search",
-  async (req,res)=>{
-  
-  try{
-  
-  const q =
-  req.query.q;
-  
-  if(
-  !q ||
-  q.length < 3
-  ){
-  
-  return res.json([]);
-  
+  "/api/google-books/search",
+  isAuthenticated,
+  async (req, res) => {
+    try {
+      const result =
+        await searchVolumes(
+          req.query.q,
+          {
+            startIndex:
+              req.query.startIndex,
+            maxResults:
+              req.query.maxResults,
+            searchBy:
+              req.query.searchBy
+          }
+        );
+
+      const books =
+        await addDuplicateInfo(
+          result.books,
+          req.session.userId
+        );
+
+      res.json({
+        ...result,
+        books
+      });
+    } catch (err) {
+      console.error(
+        "Google Books search failed:",
+        err.message
+      );
+
+      res.status(502).json({
+        error:
+          "Book search is temporarily unavailable.",
+        books: [],
+        totalItems: 0,
+        startIndex: 0
+      });
+    }
   }
-  
-  const response =
-  await axios.get(
-  `https://openlibrary.org/search.json?title=${encodeURIComponent(q)}`
-  );
-  
-  const books =
-  response.data.docs
-  .filter(
-  book =>
-  book.cover_i &&
-  book.author_name
-  )
-  .slice(0,10)
-  .map(book=>({
-  
-  title:
-  book.title,
-  
-  author:
-  book.author_name[0],
-  
-  isbn:
-  book.isbn?.[0] || "",
-  
-  publish_year:
-  book.first_publish_year || "",
-  
-  cover_url:
-  `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg`
-  
-  }));
-  
-  res.json(
-  books
-  );
-  
-  }catch(err){
-  
-  console.error(err);
-  
-  res.json([]);
-  
+);
+
+router.get(
+  "/api/google-books/:volumeId",
+  isAuthenticated,
+  async (req, res) => {
+    try {
+      const book =
+        await getVolume(
+          req.params.volumeId
+        );
+
+      if (!book) {
+        return res.status(404).json({
+          error: "Book not found."
+        });
+      }
+
+      res.json({ book });
+    } catch (err) {
+      console.error(
+        "Google Books lookup failed:",
+        err.message
+      );
+
+      res.status(502).json({
+        error:
+          "Book details are temporarily unavailable."
+      });
+    }
   }
-  
-  }
-  );
+);
 
 /*
 ====================================
@@ -253,8 +317,8 @@ ADD BOOK PAGE
 ====================================
 */
 
-router.get("/add", (req, res) => {
-  res.render("add");
+router.get("/add", isAuthenticated, (req, res) => {
+  res.redirect("/search-book?manual=1");
 });
 
 /*
@@ -263,7 +327,7 @@ CREATE BOOK
 ====================================
 */
 
-router.post("/add", async (req, res) => {
+router.post("/add", isAuthenticated, async (req, res, next) => {
 
   try {
 
@@ -275,8 +339,16 @@ router.post("/add", async (req, res) => {
       rating,
       notes,
       review,
-      date_read
+      date_read,
+      google_volume_id
     } = req.body;
+
+    const cleanTitle =
+      String(title || "").trim();
+    const cleanAuthor =
+      String(author || "").trim();
+    const cleanIsbn =
+      String(isbn || "").trim();
 
     if (
       rating &&
@@ -289,45 +361,79 @@ router.post("/add", async (req, res) => {
         );
     }
 
-    let cover_url = "";
-
-    try {
-
-      const apiResponse =
-        await axios.get(
-          `https://openlibrary.org/search.json?title=${encodeURIComponent(
-            title
-          )}&author=${encodeURIComponent(
-            author || ""
-          )}`
-        );
-
-      if (
-        apiResponse.data.docs.length > 0
-      ) {
-
-        const book =
-          apiResponse.data.docs[0];
-
-        if (book.cover_i) {
-
-          cover_url =
-            `https://covers.openlibrary.org/b/id/${book.cover_i}-L.jpg`;
-
+    if (!cleanTitle) {
+      return res.status(400).render(
+        "error",
+        {
+          pageTitle: "Title Required",
+          message:
+            "A title is required before a book can be saved."
         }
-
-      }
-
-    } catch (apiError) {
-
-      console.error(
-        "Open Library Error:",
-        apiError.message
       );
-
     }
 
-    await db.query(
+    if (google_volume_id || cleanIsbn) {
+      const duplicate =
+        await db.query(
+          `
+          SELECT id
+          FROM books
+          WHERE user_id = $1
+          AND (
+            (
+              $2::text IS NOT NULL
+              AND google_volume_id = $2
+            )
+            OR
+            (
+              $3::text IS NOT NULL
+              AND isbn = $3
+            )
+          )
+          LIMIT 1
+          `,
+          [
+            req.session.userId,
+            google_volume_id || null,
+            cleanIsbn || null
+          ]
+        );
+
+      if (duplicate.rows.length > 0) {
+        return res.redirect(
+          `/book/${duplicate.rows[0].id}`
+        );
+      }
+    }
+
+    let googleBook = null;
+
+    if (google_volume_id) {
+      try {
+        googleBook =
+          await getVolume(
+            google_volume_id
+          );
+      } catch (apiError) {
+        console.error(
+          "Google Books verification failed:",
+          apiError.message
+        );
+
+        return res.status(502).render(
+          "error",
+          {
+            pageTitle:
+              "Book Lookup Unavailable",
+            message:
+              "We could not verify that Google Books result. Please try adding it again."
+          }
+        );
+      }
+    }
+
+    const createdBook =
+      await db.query(
       `
       INSERT INTO books
       (
@@ -340,37 +446,55 @@ router.post("/add", async (req, res) => {
         review,
         cover_url,
         date_read,
-        user_id
+        user_id,
+        google_volume_id,
+        subtitle,
+        publisher,
+        published_date,
+        description,
+        page_count,
+        categories,
+        language
       )
       VALUES
       (
         $1,$2,$3,$4,
-        $5,$6,$7,$8,$9,$10
+        $5,$6,$7,$8,$9,$10,
+        $11,$12,$13,$14,$15,
+        $16,$17,$18
       )
+      RETURNING id
       `,
       [
-        title,
-        author,
-        isbn,
+        cleanTitle,
+        cleanAuthor,
+        cleanIsbn,
         publish_year || null,
         rating || null,
         notes,
         review,
-        cover_url,
+        googleBook?.cover_url || "",
         date_read || null,
-        req.session.userId
+        req.session.userId,
+        googleBook?.google_volume_id ||
+          null,
+        googleBook?.subtitle || null,
+        googleBook?.publisher || null,
+        googleBook?.published_date ||
+          null,
+        googleBook?.description || null,
+        googleBook?.page_count || null,
+        googleBook?.categories || [],
+        googleBook?.language || null
       ]
     );
 
-    res.redirect("/");
+    res.redirect(
+      `/book/${createdBook.rows[0].id}`
+    );
 
   } catch (err) {
-
-    console.error(err);
-
-    res
-      .status(500)
-      .send("Failed to add book.");
+    next(err);
 
   }
 });
@@ -381,7 +505,7 @@ BOOK DETAILS PAGE
 ====================================
 */
 
-router.get("/book/:id", async (req, res) => {
+router.get("/book/:id", isAuthenticated, async (req, res, next) => {
 
   try {
 
@@ -403,23 +527,23 @@ router.get("/book/:id", async (req, res) => {
 
       return res
       .status(404)
-      .send("Book not found");
+      .render("404", {
+        pageTitle: "Book Not Found",
+        message:
+          "That book could not be found in your library."
+      });
 
     }
 
-    res.render(
-      "book-details",
-      {
-        book: result.rows[0]
-      }
-    );
+    const book = result.rows[0];
+
+    res.render("book-details", {
+      pageTitle: book.title,
+      book
+    });
 
   } catch(err){
-
-    console.error(err);
-
-    res.status(500)
-    .send("Error");
+    next(err);
 
   }
 
@@ -431,7 +555,7 @@ EDIT PAGE
 ====================================
 */
 
-router.get("/edit/:id", async (req, res) => {
+router.get("/edit/:id", isAuthenticated, async (req, res, next) => {
 
   try {
 
@@ -455,21 +579,21 @@ router.get("/edit/:id", async (req, res) => {
 
       return res
         .status(404)
-        .send("Book not found.");
+        .render("404", {
+          pageTitle: "Book Not Found",
+          message:
+            "That book could not be found in your library."
+        });
 
     }
 
     res.render("edit", {
+      pageTitle: `Edit ${result.rows[0].title}`,
       book: result.rows[0]
     });
 
   } catch (err) {
-
-    console.error(err);
-
-    res
-      .status(500)
-      .send("Failed to load book.");
+    next(err);
 
   }
 });
@@ -480,7 +604,7 @@ UPDATE BOOK
 ====================================
 */
 
-router.put("/edit/:id", async (req, res) => {
+router.put("/edit/:id", isAuthenticated, async (req, res, next) => {
 
   try {
 
@@ -515,7 +639,7 @@ router.put("/edit/:id", async (req, res) => {
         title = $1,
         author = $2,
         isbn = $3,
-        publish_year = $4
+        publish_year = $4,
         rating = $5,
         notes = $6,
         review = $7,
@@ -540,12 +664,7 @@ router.put("/edit/:id", async (req, res) => {
     res.redirect("/");
 
   } catch (err) {
-
-    console.error(err);
-
-    res
-      .status(500)
-      .send("Failed to update book.");
+    next(err);
 
   }
 });
@@ -556,7 +675,7 @@ DELETE BOOK
 ====================================
 */
 
-router.delete("/delete/:id", async (req, res) => {
+router.delete("/delete/:id", isAuthenticated, async (req, res, next) => {
 
   try {
 
@@ -575,12 +694,7 @@ router.delete("/delete/:id", async (req, res) => {
     res.redirect("/");
 
   } catch (err) {
-
-    console.error(err);
-
-    res
-      .status(500)
-      .send("Failed to delete book.");
+    next(err);
 
   }
 });
@@ -591,7 +705,7 @@ BOOK ANALYTICS
 ====================================
 */
 
-router.get("/stats", async (req,res)=>{
+router.get("/stats", isAuthenticated, async (req,res,next)=>{
 
   try{
   
@@ -613,20 +727,8 @@ router.get("/stats", async (req,res)=>{
   const totalBooks =
   rows.length;
   
-  const avgRating =
-  rows.length
-  ?
-  (
-  rows.reduce(
-  (sum,b)=>
-  sum+(b.rating||0),
-  0
-  )
-  /
-  rows.length
-  ).toFixed(1)
-  :
-  0;
+  const { avgRating } =
+  calculateLibraryStats(rows);
   
   const booksThisYear =
   rows.filter(book=>{
@@ -648,6 +750,7 @@ router.get("/stats", async (req,res)=>{
   res.render(
   "stats",
   {
+  pageTitle: "Reading Analytics",
   totalBooks,
   avgRating,
   booksThisYear,
@@ -656,10 +759,7 @@ router.get("/stats", async (req,res)=>{
   );
   
   }catch(err){
-  
-  console.error(err);
-  
-  res.send("Error");
+  next(err);
   
   }
   
@@ -673,6 +773,7 @@ AUTOCOMPLETE SEARCH
 
 router.get(
   "/api/search-books",
+  isAuthenticated,
   async (req, res) => {
 
     try {

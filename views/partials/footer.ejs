@@ -1,69 +1,147 @@
-</div>
+  </div>
 
-<footer>
+  <%- include("confirm-dialog") %>
 
-  <p>
-    Built with ❤️ using Node.js, Express,
-    Neon PostgreSQL and Open Library API
-  </p>
+  <script>
+    (() => {
+      const root =
+        document.documentElement;
 
-</footer>
+      const toggle =
+        document.getElementById("themeToggle");
 
-<script>
+      function renderIcons() {
+        if (typeof lucide !== "undefined") {
+          lucide.createIcons();
+        }
+      }
 
-  const toggleButton =
-    document.getElementById("themeToggle");
-  
-  const savedTheme =
-  localStorage.getItem("theme");
+      function updateThemeControl() {
+        if (!toggle) {
+          return;
+        }
 
-  if (!savedTheme) {
+        const isDark =
+          root.classList.contains("dark");
 
-    if (
-      window.matchMedia(
-        "(prefers-color-scheme: dark)"
-      ).matches
-    ) {
+        const label =
+          isDark
+            ? "Use light theme"
+            : "Use dark theme";
 
-      document.body.classList.add("dark-mode");
+        toggle.setAttribute("aria-label", label);
+        toggle.setAttribute("title", label);
+        toggle.innerHTML =
+          `<i
+            data-lucide="${isDark ? "sun" : "moon"}"
+            aria-hidden="true"></i>`;
 
-    }
+        renderIcons();
+      }
 
-  }
-  
-  if (savedTheme === "dark") {
-    document.body.classList.add("dark-mode");
-    toggleButton.innerHTML = "☀️";
-  }
-  
-  toggleButton.addEventListener("click", () => {
-  
-    document.body.classList.toggle("dark-mode");
-  
-    if (
-      document.body.classList.contains("dark-mode")
-    ) {
-  
-      localStorage.setItem(
-        "theme",
-        "dark"
-      );
-  
-      toggleButton.innerHTML = "☀️";
-  
-    } else {
-  
-      localStorage.setItem(
-        "theme",
-        "light"
-      );
-  
-      toggleButton.innerHTML = "🌙";
-    }
-  
-  });
-  
+      updateThemeControl();
+      renderIcons();
+
+      if (toggle) {
+        toggle.addEventListener("click", () => {
+          const isDark =
+            root.classList.toggle("dark");
+
+          try {
+            localStorage.setItem(
+              "theme",
+              isDark ? "dark" : "light"
+            );
+          } catch (error) {
+            // Theme switching still works for this page.
+          }
+
+          updateThemeControl();
+        });
+      }
+    })();
   </script>
-  
-  </body>
-  </html>
+
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    (() => {
+      if (
+        typeof bootstrap === "undefined"
+      ) {
+        return;
+      }
+
+      const dialogElement =
+        document.getElementById(
+          "confirmDialog"
+        );
+
+      const dialogTitle =
+        document.getElementById(
+          "confirmDialogTitle"
+        );
+
+      const dialogMessage =
+        document.getElementById(
+          "confirmDialogMessage"
+        );
+
+      const confirmButton =
+        document.getElementById(
+          "confirmDialogAction"
+        );
+
+      const dialog =
+        new bootstrap.Modal(dialogElement);
+
+      let pendingForm = null;
+
+      document
+        .querySelectorAll("[data-confirm-form]")
+        .forEach(form => {
+          form.addEventListener("submit", event => {
+            event.preventDefault();
+            pendingForm = form;
+
+            dialogTitle.textContent =
+              form.dataset.confirmTitle ||
+              "Confirm action";
+
+            dialogMessage.textContent =
+              form.dataset.confirmMessage ||
+              "Are you sure you want to continue?";
+
+            confirmButton.textContent =
+              form.dataset.confirmLabel ||
+              "Confirm";
+
+            dialog.show();
+          });
+        });
+
+      confirmButton.addEventListener(
+        "click",
+        () => {
+          if (!pendingForm) {
+            return;
+          }
+
+          const form = pendingForm;
+          pendingForm = null;
+          dialog.hide();
+          form.submit();
+        }
+      );
+
+      dialogElement.addEventListener(
+        "hidden.bs.modal",
+        () => {
+          pendingForm = null;
+        }
+      );
+    })();
+  </script>
+</body>
+
+</html>

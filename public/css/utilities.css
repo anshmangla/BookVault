@@ -1,0 +1,83 @@
+.section{
+
+    padding:70px 0;
+    
+    }
+    
+    .shadow-card{
+    
+    box-shadow:var(--shadow);
+    
+    }
+    
+    .glass{
+    
+    background:
+    
+    rgba(255,255,255,.8);
+    
+    backdrop-filter:blur(15px);
+    
+    }
+    
+    .rounded-xl{
+    
+    border-radius:var(--radius-lg);
+    
+    }
+    
+    .text-gradient{
+    
+    background:
+    
+    linear-gradient(
+    90deg,
+    var(--primary),
+    var(--secondary)
+    );
+    
+    -webkit-background-clip:text;
+    
+    -webkit-text-fill-color:transparent;
+    
+    }
+    
+    .page-title{
+    
+    font-weight:800;
+    
+    font-size:3rem;
+    
+    margin-bottom:10px;
+    
+    }
+    
+    .subtitle{
+    
+    font-size:1.1rem;
+    
+    color:var(--text-light);
+    
+    }
+    
+    .badge-soft{
+    
+    display:inline-flex;
+    
+    align-items:center;
+    
+    gap:6px;
+    
+    padding:8px 14px;
+    
+    background:#EEF2FF;
+    
+    color:var(--primary);
+    
+    border-radius:999px;
+    
+    font-size:.85rem;
+    
+    font-weight:600;
+    
+    }

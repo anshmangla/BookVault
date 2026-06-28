@@ -12,7 +12,9 @@ REGISTER PAGE
 */
 
 router.get("/register", (req, res) => {
-  res.render("register");
+  res.render("register", {
+    pageTitle: "Create Account"
+  });
 });
 
 /*
@@ -21,7 +23,7 @@ REGISTER USER
 =========================
 */
 
-router.post("/register", async (req, res) => {
+router.post("/register", async (req, res, next) => {
   try {
     const {
       username,
@@ -48,8 +50,7 @@ router.post("/register", async (req, res) => {
     res.redirect("/login");
 
   } catch (err) {
-    console.error(err);
-    res.send("Registration failed");
+    next(err);
   }
 });
 
@@ -60,7 +61,9 @@ LOGIN PAGE
 */
 
 router.get("/login", (req, res) => {
-  res.render("login");
+  res.render("login", {
+    pageTitle: "Log In"
+  });
 });
 
 /*
@@ -69,7 +72,7 @@ LOGIN USER
 =========================
 */
 
-router.post("/login", async (req, res) => {
+router.post("/login", async (req, res, next) => {
 
   try {
 
@@ -89,7 +92,14 @@ router.post("/login", async (req, res) => {
       );
 
     if (result.rows.length === 0) {
-      return res.send("User not found");
+      return res.status(401).render(
+        "login",
+        {
+          pageTitle: "Log In",
+          error:
+            "The email or password is incorrect."
+        }
+      );
     }
 
     const user =
@@ -102,24 +112,26 @@ router.post("/login", async (req, res) => {
       );
 
     if (!validPassword) {
-      return res.send(
-        "Invalid password"
+      return res.status(401).render(
+        "login",
+        {
+          pageTitle: "Log In",
+          error:
+            "The email or password is incorrect."
+        }
       );
     }
 
     req.session.userId =
       user.id;
 
-    req.session.username =
+    req.session.userName =
       user.username;
 
     res.redirect("/");
 
   } catch (err) {
-
-    console.error(err);
-
-    res.send("Login failed");
+    next(err);
 
   }
 
@@ -163,7 +175,7 @@ router.get(
     req.session.userId =
     req.user.id;
     
-    req.session.username =
+    req.session.userName =
     req.user.username;
     
     res.redirect("/");
@@ -180,7 +192,7 @@ LOGOUT
 
 router.get(
   "/logout",
-  (req,res)=>{
+  (req,res,next)=>{
   
   req.logout(
   (err)=>{

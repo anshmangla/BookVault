@@ -1,108 +1,129 @@
 <%- include("partials/header") %>
 
-<h1 class="mb-4">
- Reading Analytics
-</h1>
+<main class="page-shell">
 
-<div class="row">
+  <%- include("partials/page-header", {
+    eyebrow: "Insights",
+    icon: "chart-column",
+    title: "Reading analytics",
+    description: "A quick snapshot of your library and reading activity.",
+    actionHref: "/search-book",
+    actionLabel: "Add Book",
+    actionIcon: "plus"
+  }) %>
 
-<div class="col-md-4">
+  <section class="analytics-summary" aria-label="Reading summary">
 
-<div class="card p-4 shadow">
+    <article class="surface-card analytics-card">
+      <span class="analytics-card-icon" aria-hidden="true">
+        <i data-lucide="library-big"></i>
+      </span>
+      <div>
+        <p>Total Books</p>
+        <strong><%= totalBooks %></strong>
+      </div>
+    </article>
 
-<h5>
- Total Books
-</h5>
+    <article class="surface-card analytics-card">
+      <span class="analytics-card-icon" aria-hidden="true">
+        <i data-lucide="star"></i>
+      </span>
+      <div>
+        <p>Average Rating</p>
+        <strong><%= avgRating %></strong>
+      </div>
+    </article>
 
-<h2>
- <%= totalBooks %>
-</h2>
+    <article class="surface-card analytics-card">
+      <span class="analytics-card-icon" aria-hidden="true">
+        <i data-lucide="calendar-check"></i>
+      </span>
+      <div>
+        <p>Read This Year</p>
+        <strong><%= booksThisYear %></strong>
+      </div>
+    </article>
 
-</div>
+  </section>
 
-</div>
+  <% if (books.some(book => book.rating)) { %>
 
-<div class="col-md-4">
+    <section class="surface-card analytics-chart" aria-labelledby="ratings-heading">
+      <div class="analytics-chart-header">
+        <h2 id="ratings-heading">Book ratings</h2>
+        <p>Your ratings across the library.</p>
+      </div>
 
-<div class="card p-4 shadow">
+      <div class="analytics-chart-canvas">
+        <canvas id="ratingChart">
+          A chart showing your book ratings.
+        </canvas>
+      </div>
+    </section>
 
-<h5>
- Average Rating
-</h5>
+  <% } else { %>
 
-<h2>
- ⭐ <%= avgRating %>
-</h2>
+    <%- include("partials/empty-state", {
+      icon: "chart-no-axes-column",
+      title: "No rating data yet",
+      description: "Rate a book to start building your reading insights.",
+      actionHref: "/",
+      actionLabel: "View Library",
+      actionIcon: "library-big"
+    }) %>
 
-</div>
+  <% } %>
 
-</div>
-
-<div class="col-md-4">
-
-<div class="card p-4 shadow">
-
-<h5>
- Books Read This Year
-</h5>
-
-<h2>
- <%= booksThisYear %>
-</h2>
-
-</div>
-
-</div>
-
-</div>
-
-<canvas
- id="ratingChart"
- class="mt-5">
-</canvas>
+</main>
 
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
+  const ratings =
+    <%- JSON.stringify(
+      books
+        .filter(book => book.rating)
+        .map(book => ({
+          title: book.title,
+          rating: book.rating
+        }))
+    ).replace(/</g, "\\u003c") %>;
 
-const ratings =
-<%- JSON.stringify(
-books.map(
-b=>b.rating
-).filter(Boolean)
-) %>;
+  const chartCanvas =
+    document.getElementById("ratingChart");
 
-const ctx =
-document
-.getElementById(
-"ratingChart"
-);
-
-new Chart(ctx,{
-
-type:"bar",
-
-data:{
-
-labels:
-ratings.map(
-(_,i)=>
-`Book ${i+1}`
-),
-
-datasets:[{
-
-label:
-"Ratings",
-
-data:ratings
-
-}]
-
-}
-
-});
-
+  if (chartCanvas) {
+    new Chart(chartCanvas, {
+      type: "bar",
+      data: {
+        labels: ratings.map(book => book.title),
+        datasets: [{
+          label: "Rating",
+          data: ratings.map(book => book.rating),
+          backgroundColor: "#6366F1",
+          borderRadius: 8
+        }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          y: {
+            beginAtZero: true,
+            max: 10,
+            ticks: {
+              stepSize: 1
+            }
+          }
+        },
+        plugins: {
+          legend: {
+            display: false
+          }
+        }
+      }
+    });
+  }
 </script>
 
 <%- include("partials/footer") %>

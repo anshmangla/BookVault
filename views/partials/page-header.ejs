@@ -1,0 +1,36 @@
+<header class="page-header">
+
+  <div class="page-header-copy">
+
+    <% if (typeof eyebrow !== "undefined" && eyebrow) { %>
+      <span class="page-header-eyebrow">
+        <% if (typeof icon !== "undefined" && icon) { %>
+          <i data-lucide="<%= icon %>" aria-hidden="true"></i>
+        <% } %>
+        <%= eyebrow %>
+      </span>
+    <% } %>
+
+    <h1><%= title %></h1>
+
+    <% if (typeof description !== "undefined" && description) { %>
+      <p><%= description %></p>
+    <% } %>
+
+  </div>
+
+  <% if (
+    typeof actionHref !== "undefined" &&
+    actionHref &&
+    typeof actionLabel !== "undefined" &&
+    actionLabel
+  ) { %>
+    <a href="<%= actionHref %>" class="btn btn-primary">
+      <% if (typeof actionIcon !== "undefined" && actionIcon) { %>
+        <i data-lucide="<%= actionIcon %>" aria-hidden="true"></i>
+      <% } %>
+      <%= actionLabel %>
+    </a>
+  <% } %>
+
+</header>

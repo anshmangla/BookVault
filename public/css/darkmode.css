@@ -1,0 +1,78 @@
+html.dark {
+  color-scheme: dark;
+  --background: #0F172A;
+  --surface: #1E293B;
+  --surface-hover: #334155;
+  --text: #F8FAFC;
+  --text-light: #CBD5E1;
+  --border: #475569;
+  --primary-soft: #312E81;
+  --success-soft: #064E3B;
+  --danger-soft: #450A0A;
+  --warning-soft: #451A03;
+  --info-soft: #0C4A6E;
+}
+
+html.dark .book-cover,
+html.dark .cover-container,
+html.dark .book-cover-frame {
+  background: var(--surface);
+}
+
+html.dark .btn-light {
+  color: var(--text);
+  background: var(--surface);
+  border-color: var(--border);
+}
+
+html.dark .hero-stats {
+  background: rgba(30, 41, 59, 0.75);
+  border-color: rgba(71, 85, 105, 0.6);
+}
+
+html.dark .hero-glow {
+  background: radial-gradient(
+    circle,
+    rgba(99, 102, 241, 0.2) 0%,
+    rgba(139, 92, 246, 0.08) 40%,
+    transparent 70%
+  );
+}
+
+html.dark .hero-stat-icon,
+html.dark .empty-library-icon,
+html.dark .empty-state-icon,
+html.dark .status-page-icon {
+  color: #A5B4FC;
+  background: linear-gradient(135deg, #312E81, #3730A3);
+}
+
+html.dark .book-rating-badge {
+  color: var(--text);
+  background: rgba(30, 41, 59, 0.92);
+}
+
+html.dark .search-bar-input:focus {
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.25);
+}
+
+html.dark .filter-pill:hover,
+html.dark .search-suggestion-item:hover,
+html.dark .search-suggestion-item:focus {
+  background: var(--surface-hover);
+}
+
+html.dark .alert-danger {
+  color: #FECACA;
+  border-color: #7F1D1D;
+}
+
+html.dark .alert-success {
+  color: #A7F3D0;
+  border-color: #065F46;
+}
+
+html.dark .alert-info {
+  color: #BAE6FD;
+  border-color: #075985;
+}
