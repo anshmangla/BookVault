@@ -51,10 +51,12 @@ app.set("view engine", "ejs");
 const authRoutes = require("./routes/auth");
 const bookRoutes = require("./routes/books");
 const profileRoutes = require("./routes/profile");
+const socialRoutes = require("./routes/social");
 
 app.use("/", authRoutes);
 app.use("/", bookRoutes);
 app.use("/", profileRoutes);
+app.use("/", socialRoutes);
 
 app.use((req, res) => {
   res.status(404).render("404", {

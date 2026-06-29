@@ -631,6 +631,14 @@ router.post("/add", isAuthenticated, async (req, res, next) => {
     // Save tags
     await syncBookTags(newBookId, req.session.userId, tags);
 
+    // Record activity
+    if (visibility !== 'private') {
+      await db.query(
+        `INSERT INTO activities (user_id, book_id, action_type) VALUES ($1, $2, 'added_book')`,
+        [req.session.userId, newBookId]
+      );
+    }
+
     res.redirect(
       `/book/${newBookId}`
     );
@@ -876,6 +884,21 @@ router.put("/edit/:id", isAuthenticated, async (req, res, next) => {
 
     // Sync tags
     await syncBookTags(req.params.id, req.session.userId, tags);
+
+    // Record activity if review was added and book is public
+    if (visibility !== 'private' && review && review.trim() !== "") {
+      // Avoid spamming the feed if they edit their review multiple times
+      const existingActivity = await db.query(
+        `SELECT id FROM activities WHERE user_id = $1 AND book_id = $2 AND action_type = 'reviewed_book'`,
+        [req.session.userId, req.params.id]
+      );
+      if (existingActivity.rows.length === 0) {
+        await db.query(
+          `INSERT INTO activities (user_id, book_id, action_type) VALUES ($1, $2, 'reviewed_book')`,
+          [req.session.userId, req.params.id]
+        );
+      }
+    }
 
     req.session.notice = {
       type: "success",

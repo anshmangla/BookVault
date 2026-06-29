@@ -15,20 +15,81 @@
       <% if (profileUser.bio) { %>
         <p class="hero-description" style="max-width: 600px;"><%= profileUser.bio %></p>
       <% } %>
-      <div class="library-overview-stats" aria-label="Library statistics" style="justify-content: center; margin-top: 1.5rem;">
-        <div>
-          <i data-lucide="library-big" aria-hidden="true"></i>
-          <strong><%= totalBooks %></strong>
-          <span><%= totalBooks === 1 ? "Book" : "Books" %></span>
+      <div style="display: flex; justify-content: center; align-items: center; gap: 3rem; margin-top: 2rem; flex-wrap: wrap; padding-top: 2rem; border-top: 1px solid var(--border);">
+        
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 0.35rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text);">
+            <i data-lucide="library-big" style="width: 20px; height: 20px; color: var(--primary);"></i>
+            <strong style="font-size: 1.25rem;"><%= totalBooks %></strong>
+          </div>
+          <span style="font-size: 0.85rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;"><%= totalBooks === 1 ? "Book" : "Books" %></span>
         </div>
-        <div>
-          <i data-lucide="star" aria-hidden="true"></i>
-          <strong><%= avgRating %></strong>
-          <span>Average rating</span>
+
+        <div style="display: flex; flex-direction: column; align-items: center; gap: 0.35rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text);">
+            <i data-lucide="star" style="width: 20px; height: 20px; color: var(--primary);"></i>
+            <strong style="font-size: 1.25rem;"><%= avgRating %></strong>
+          </div>
+          <span style="font-size: 0.85rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Avg rating</span>
         </div>
+
+        <a href="/u/<%= profileUser.username %>/followers" style="display: flex; flex-direction: column; align-items: center; gap: 0.35rem; text-decoration: none; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+          <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text);">
+            <i data-lucide="users" style="width: 20px; height: 20px; color: var(--primary);"></i>
+            <strong style="font-size: 1.25rem;" id="followersCount"><%= followersCount %></strong>
+          </div>
+          <span style="font-size: 0.85rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Followers</span>
+        </a>
+
+        <a href="/u/<%= profileUser.username %>/following" style="display: flex; flex-direction: column; align-items: center; gap: 0.35rem; text-decoration: none; cursor: pointer; transition: opacity 0.2s;" onmouseover="this.style.opacity='0.8'" onmouseout="this.style.opacity='1'">
+          <div style="display: flex; align-items: center; gap: 0.5rem; color: var(--text);">
+            <i data-lucide="user-plus" style="width: 20px; height: 20px; color: var(--primary);"></i>
+            <strong style="font-size: 1.25rem;"><%= followingCount %></strong>
+          </div>
+          <span style="font-size: 0.85rem; color: var(--text-light); text-transform: uppercase; letter-spacing: 0.05em; font-weight: 600;">Following</span>
+        </a>
+
       </div>
+      
+      <% if (userId && userId !== profileUser.id) { %>
+        <div style="margin-top: 1.5rem;">
+          <button id="followBtn" class="btn <%= isFollowing ? 'btn-secondary' : 'btn-primary' %>" data-username="<%= profileUser.username %>">
+            <i data-lucide="<%= isFollowing ? 'user-minus' : 'user-plus' %>" aria-hidden="true"></i>
+            <span><%= isFollowing ? 'Unfollow' : 'Follow' %></span>
+          </button>
+        </div>
+      <% } %>
     </div>
   </section>
+
+  <script>
+    const followBtn = document.getElementById("followBtn");
+    if (followBtn) {
+      followBtn.addEventListener("click", async () => {
+        const username = followBtn.getAttribute("data-username");
+        const res = await fetch(`/u/${username}/follow`, { method: "POST" });
+        if (res.ok) {
+          const data = await res.json();
+          const followersCountEl = document.getElementById("followersCount");
+          const btnSpan = followBtn.querySelector("span");
+          const icon = followBtn.querySelector("i");
+          
+          if (data.is_following) {
+            followBtn.classList.replace("btn-primary", "btn-secondary");
+            btnSpan.textContent = "Unfollow";
+            icon.setAttribute("data-lucide", "user-minus");
+            followersCountEl.textContent = parseInt(followersCountEl.textContent, 10) + 1;
+          } else {
+            followBtn.classList.replace("btn-secondary", "btn-primary");
+            btnSpan.textContent = "Follow";
+            icon.setAttribute("data-lucide", "user-plus");
+            followersCountEl.textContent = parseInt(followersCountEl.textContent, 10) - 1;
+          }
+          lucide.createIcons();
+        }
+      });
+    }
+  </script>
 
   <section class="library-section">
     <div class="library-section-head">

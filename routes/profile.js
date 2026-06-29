@@ -126,12 +126,34 @@ router.get("/u/:username", async (req, res, next) => {
       ? (books.reduce((acc, b) => acc + (b.rating || 0), 0) / books.filter(b => b.rating).length).toFixed(1)
       : 0;
 
+    // 4. Follows
+    const followersResult = await db.query(
+      `SELECT COUNT(*) as count FROM follows WHERE following_id = $1`,
+      [profileUser.id]
+    );
+    const followingResult = await db.query(
+      `SELECT COUNT(*) as count FROM follows WHERE follower_id = $1`,
+      [profileUser.id]
+    );
+    
+    let isFollowing = false;
+    if (req.session.userId && req.session.userId !== profileUser.id) {
+      const isFollowingResult = await db.query(
+        `SELECT 1 FROM follows WHERE follower_id = $1 AND following_id = $2`,
+        [req.session.userId, profileUser.id]
+      );
+      isFollowing = isFollowingResult.rows.length > 0;
+    }
+
     res.render("public-profile", {
       pageTitle: `${profileUser.username}'s Library`,
       profileUser,
       books,
       totalBooks,
-      avgRating
+      avgRating,
+      followersCount: parseInt(followersResult.rows[0].count, 10),
+      followingCount: parseInt(followingResult.rows[0].count, 10),
+      isFollowing
     });
 
   } catch (err) {

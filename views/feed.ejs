@@ -1,0 +1,128 @@
+<%- include("partials/header") %>
+
+<main class="page-shell">
+
+  <%- include("partials/page-header", {
+    eyebrow: "Community",
+    icon: "users",
+    title: "Activity Feed",
+    description: "See what your friends are reading and reviewing."
+  }) %>
+
+  <% if (activities.length === 0) { %>
+    <%- include("partials/empty-state", {
+      icon: "message-square-dashed",
+      title: "Your feed is quiet",
+      description: "Follow other users to see their reading activity here.",
+      actionHref: "/community/search"
+    }) %>
+  <% } else { %>
+    <div class="feed-container" style="max-width: 600px; margin: 0 auto;">
+      <% activities.forEach(activity => { %>
+        <article class="surface-card activity-card" style="margin-bottom: 1.5rem; padding: 1.5rem;">
+          
+          <div class="activity-header" style="display: flex; align-items: center; gap: 1rem; margin-bottom: 1rem;">
+            <a href="/u/<%= activity.username %>" style="display: flex; align-items: center; text-decoration: none; color: inherit; gap: 0.75rem;">
+              <% if (activity.avatar_url) { %>
+                <img src="<%= activity.avatar_url %>" alt="" style="width: 40px; height: 40px; border-radius: 50%; object-fit: cover; border: 1px solid var(--border);">
+              <% } else { %>
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); display: flex; align-items: center; justify-content: center;">
+                  <i data-lucide="user" style="width: 20px; height: 20px;"></i>
+                </div>
+              <% } %>
+              <div>
+                <strong style="display: block; font-size: 1.05rem;"><%= activity.username %></strong>
+                <span style="font-size: 0.85rem; color: var(--text-light);">
+                  <%= activity.action_type === 'added_book' ? 'Added a book to their library' : 'Wrote a review' %>
+                  • <%= new Date(activity.activity_date).toLocaleDateString(undefined, { month: 'short', day: 'numeric' }) %>
+                </span>
+              </div>
+            </a>
+          </div>
+
+          <div class="activity-body" style="background: var(--bg-alt); padding: 1rem; border-radius: var(--radius-md); display: flex; gap: 1rem;">
+            <% if (activity.cover_url) { %>
+              <a href="/u/<%= activity.username %>/review/<%= activity.book_id %>" style="flex-shrink: 0;">
+                <img src="<%= activity.cover_url %>" alt="" style="width: 80px; border-radius: 4px; box-shadow: var(--shadow-sm);">
+              </a>
+            <% } %>
+            
+            <div style="flex-grow: 1;">
+              <a href="/u/<%= activity.username %>/review/<%= activity.book_id %>" style="text-decoration: none; color: inherit;">
+                <h3 style="font-size: 1.15rem; margin-bottom: 0.25rem;"><%= activity.title %></h3>
+                <p style="font-size: 0.9rem; color: var(--text-light); margin-bottom: 0.5rem;"><%= activity.author %></p>
+                
+                <% if (activity.rating) { %>
+                  <div style="display: flex; align-items: center; gap: 4px; color: var(--primary); font-size: 0.9rem; font-weight: 600; margin-bottom: 0.5rem;">
+                    <i data-lucide="star" style="width: 14px; height: 14px;"></i>
+                    <%= activity.rating %>/10
+                  </div>
+                <% } %>
+
+                <% if (activity.action_type === 'reviewed_book' && activity.review) { %>
+                  <% if (activity.has_spoilers) { %>
+                    <span style="font-size: 0.85rem; color: var(--warning); font-style: italic; display: flex; align-items: center; gap: 4px;">
+                      <i data-lucide="triangle-alert" style="width: 12px; height: 12px;"></i> Contains spoilers
+                    </span>
+                  <% } else { %>
+                    <p style="font-size: 0.95rem; line-height: 1.5; color: var(--text); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; text-overflow: ellipsis;">
+                      "<%= activity.review %>"
+                    </p>
+                  <% } %>
+                <% } %>
+              </a>
+            </div>
+          </div>
+
+          <div class="activity-footer" style="margin-top: 1rem; display: flex; align-items: center; gap: 1rem;">
+            <button 
+              type="button" 
+              class="btn btn-compact btn-like <%= activity.user_liked ? 'liked' : 'btn-light' %>" 
+              data-activity-id="<%= activity.activity_id %>"
+              style="<%= activity.user_liked ? 'background: var(--primary-soft); color: var(--primary); border-color: transparent;' : '' %>">
+              <i data-lucide="heart" style="fill: <%= activity.user_liked ? 'currentColor' : 'none' %>;" aria-hidden="true"></i>
+              <span><%= activity.likes_count %></span>
+            </button>
+          </div>
+
+        </article>
+      <% }) %>
+    </div>
+  <% } %>
+
+</main>
+
+<script>
+  document.querySelectorAll('.btn-like').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      const activityId = btn.getAttribute('data-activity-id');
+      const res = await fetch(`/activity/${activityId}/like`, { method: 'POST' });
+      
+      if (res.ok) {
+        const data = await res.json();
+        const span = btn.querySelector('span');
+        const icon = btn.querySelector('i');
+        
+        span.textContent = data.likes_count;
+        
+        if (data.is_liked) {
+          btn.classList.add('liked');
+          btn.classList.remove('btn-light');
+          btn.style.background = 'var(--primary-soft)';
+          btn.style.color = 'var(--primary)';
+          btn.style.borderColor = 'transparent';
+          icon.style.fill = 'currentColor';
+        } else {
+          btn.classList.remove('liked');
+          btn.classList.add('btn-light');
+          btn.style.background = '';
+          btn.style.color = '';
+          btn.style.borderColor = '';
+          icon.style.fill = 'none';
+        }
+      }
+    });
+  });
+</script>
+
+<%- include("partials/footer") %>

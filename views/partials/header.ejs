@@ -97,6 +97,26 @@
 
             <li class="nav-item">
               <a
+                class="nav-link<%= currentPath === "/feed" ? " active" : "" %>"
+                href="/feed"
+                <%- currentPath === "/feed" ? 'aria-current="page"' : "" %>>
+                <i data-lucide="users" aria-hidden="true"></i>
+                Community
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a
+                class="nav-link<%= currentPath === "/community/search" ? " active" : "" %>"
+                href="/community/search"
+                <%- currentPath === "/community/search" ? 'aria-current="page"' : "" %>>
+                <i data-lucide="user-search" aria-hidden="true"></i>
+                Find Friends
+              </a>
+            </li>
+
+            <li class="nav-item">
+              <a
                 class="nav-link<%= currentPath === "/search-book" ? " active" : "" %>"
                 href="/search-book"
                 <%- currentPath === "/search-book" ? 'aria-current="page"' : "" %>>
@@ -147,6 +167,9 @@
               <ul class="dropdown-menu dropdown-menu-end">
                 <li>
                   <a class="dropdown-item" href="/">My Library</a>
+                </li>
+                <li>
+                  <a class="dropdown-item" href="/u/<%= userName %>">My Profile</a>
                 </li>
                 <li>
                   <a class="dropdown-item" href="/stats">Analytics</a>
