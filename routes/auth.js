@@ -99,7 +99,7 @@ router.post("/login", async (req, res, next) => {
   try {
 
     const {
-      email,
+      identifier,
       password
     } = req.body;
 
@@ -108,9 +108,9 @@ router.post("/login", async (req, res, next) => {
         `
         SELECT *
         FROM users
-        WHERE email = $1
+        WHERE email = $1 OR username = $1
         `,
-        [email]
+        [identifier]
       );
 
     if (result.rows.length === 0) {
@@ -118,8 +118,8 @@ router.post("/login", async (req, res, next) => {
         "login",
         {
           pageTitle: "Log In",
-          error: "The email or password is incorrect.",
-          email
+          error: "The username/email or password is incorrect.",
+          identifier
         }
       );
     }
@@ -138,8 +138,8 @@ router.post("/login", async (req, res, next) => {
         "login",
         {
           pageTitle: "Log In",
-          error: "The email or password is incorrect.",
-          email
+          error: "The username/email or password is incorrect.",
+          identifier
         }
       );
     }

@@ -11,6 +11,39 @@
 
   <%- include("partials/action-toast") %>
 
+  <section class="surface-card form-card" aria-label="Username settings" style="margin-bottom: 2rem;">
+    <h2 class="form-section-title">Username</h2>
+    
+    <% if (userProfile.username_changed) { %>
+      <div class="form-field">
+        <label class="form-label">Current Username</label>
+        <div style="display: flex; align-items: center; gap: 0.5rem; padding: 0.75rem 1rem; background: var(--surface-hover); border-radius: var(--radius-md); border: 1px solid var(--border); color: var(--text-light);">
+          <i data-lucide="lock" aria-hidden="true" style="width: 16px; height: 16px;"></i>
+          <span><%= userProfile.username %></span>
+        </div>
+        <small class="text-muted" style="margin-top: 0.5rem; display: block;">You have already changed your username and it is now locked.</small>
+      </div>
+    <% } else { %>
+      <form action="/settings/username?_method=PUT" method="POST">
+        <div class="form-field">
+          <label class="form-label" for="username">Choose your Username</label>
+          <div style="display: flex; gap: 1rem; align-items: flex-start; flex-wrap: wrap;">
+            <div style="flex-grow: 1; min-width: 200px;">
+              <input type="text" id="username" name="username" class="form-control" value="<%= userProfile.username %>" required minlength="3" pattern="[a-zA-Z0-9_]+">
+              <small class="text-muted" style="margin-top: 0.5rem; display: block; color: var(--warning) !important;">
+                <i data-lucide="triangle-alert" style="width: 14px; height: 14px; vertical-align: middle; margin-bottom: 2px;"></i>
+                <strong>Warning:</strong> You can only change your username once.
+              </small>
+            </div>
+            <button class="btn btn-primary" type="submit">
+              Save Username
+            </button>
+          </div>
+        </div>
+      </form>
+    <% } %>
+  </section>
+
   <section class="surface-card form-card" aria-label="Profile settings">
 
     <form action="/settings?_method=PUT" method="POST">

@@ -23,11 +23,11 @@
     <form action="/login" method="POST">
 
       <%- include("partials/form-field", {
-        label: "Email",
-        name: "email",
-        type: "email",
-        value: typeof email !== "undefined" ? email : "",
-        autocomplete: "email",
+        label: "Username or Email",
+        name: "identifier",
+        type: "text",
+        value: typeof identifier !== "undefined" ? identifier : "",
+        autocomplete: "username",
         fieldRequired: true
       }) %>
 

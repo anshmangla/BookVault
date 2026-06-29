@@ -99,6 +99,31 @@
       </div>
     </div>
 
+    <% if (totalBooks > 0 || (activeStatus && activeStatus !== 'all')) { %>
+      <div class="connections-tabs" style="display: flex; gap: 2rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border); overflow-x: auto; white-space: nowrap;">
+        <a href="/u/<%= profileUser.username %>?status=all" 
+           style="padding: 1rem 0; text-decoration: none; font-weight: 600; color: <%= (!activeStatus || activeStatus === 'all') ? 'var(--primary)' : 'var(--text-light)' %>; border-bottom: 3px solid <%= (!activeStatus || activeStatus === 'all') ? 'var(--primary)' : 'transparent' %>;">
+          All Books
+        </a>
+        <a href="/u/<%= profileUser.username %>?status=read" 
+           style="padding: 1rem 0; text-decoration: none; font-weight: 600; color: <%= activeStatus === 'read' ? 'var(--primary)' : 'var(--text-light)' %>; border-bottom: 3px solid <%= activeStatus === 'read' ? 'var(--primary)' : 'transparent' %>;">
+          Read
+        </a>
+        <a href="/u/<%= profileUser.username %>?status=currently_reading" 
+           style="padding: 1rem 0; text-decoration: none; font-weight: 600; color: <%= activeStatus === 'currently_reading' ? 'var(--primary)' : 'var(--text-light)' %>; border-bottom: 3px solid <%= activeStatus === 'currently_reading' ? 'var(--primary)' : 'transparent' %>;">
+          Currently Reading
+        </a>
+        <a href="/u/<%= profileUser.username %>?status=want_to_read" 
+           style="padding: 1rem 0; text-decoration: none; font-weight: 600; color: <%= activeStatus === 'want_to_read' ? 'var(--primary)' : 'var(--text-light)' %>; border-bottom: 3px solid <%= activeStatus === 'want_to_read' ? 'var(--primary)' : 'transparent' %>;">
+          Want to Read
+        </a>
+        <a href="/u/<%= profileUser.username %>?status=dnf" 
+           style="padding: 1rem 0; text-decoration: none; font-weight: 600; color: <%= activeStatus === 'dnf' ? 'var(--primary)' : 'var(--text-light)' %>; border-bottom: 3px solid <%= activeStatus === 'dnf' ? 'var(--primary)' : 'transparent' %>;">
+          Did Not Finish
+        </a>
+      </div>
+    <% } %>
+
     <% if (books.length === 0) { %>
       <%- include("partials/empty-state", {
         icon: "library-big",
@@ -128,7 +153,16 @@
                   <% } %>
                 </div>
                 <div class="book-card-body">
-                  <h3 class="book-card-title"><%= book.title %></h3>
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 0.5rem; margin-bottom: 0.25rem;">
+                    <h3 class="book-card-title" style="margin-bottom: 0;"><%= book.title %></h3>
+                    <% if (book.status === 'currently_reading') { %>
+                      <span class="badge-soft" style="font-size: 0.65rem; padding: 2px 6px; color: var(--primary);">Reading</span>
+                    <% } else if (book.status === 'want_to_read') { %>
+                      <span class="badge-soft" style="font-size: 0.65rem; padding: 2px 6px; color: var(--warning);">TBR</span>
+                    <% } else if (book.status === 'dnf') { %>
+                      <span class="badge-soft" style="font-size: 0.65rem; padding: 2px 6px; color: var(--danger);">DNF</span>
+                    <% } %>
+                  </div>
                   <p class="book-card-author"><%= book.author || "Unknown author" %></p>
                   <% if (book.review) { %>
                     <% if (book.has_spoilers) { %>

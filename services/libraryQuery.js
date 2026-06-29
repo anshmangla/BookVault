@@ -55,6 +55,7 @@ function normalizeLibraryQuery(query = {}) {
     sort,
     rating,
     year,
+    status: ["read", "currently_reading", "want_to_read", "dnf"].includes(query.status) ? query.status : "all",
     favorites: Boolean(query.favorites),
     page: positiveInteger(query.page, 1)
   };
@@ -98,6 +99,11 @@ function buildLibraryWhere(
     conditions.push(
       `EXTRACT(YEAR FROM date_read) = $${values.length}`
     );
+  }
+
+  if (filters.status && filters.status !== "all") {
+    values.push(filters.status);
+    conditions.push(`status = $${values.length}`);
   }
 
   if (filters.favorites) {

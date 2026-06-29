@@ -95,6 +95,9 @@ updated.rows[0]
 
 }
 
+const baseName = profile.displayName ? profile.displayName.replace(/[^a-zA-Z0-9]/g, "").toLowerCase() : "user";
+const safeUsername = `${baseName}_${Date.now().toString().slice(-4)}${Math.floor(Math.random() * 1000)}`;
+
 const newUser =
 await db.query(
 `
@@ -112,7 +115,7 @@ RETURNING *
 `,
 [
 profile.id,
-profile.displayName,
+safeUsername,
 email
 ]
 );

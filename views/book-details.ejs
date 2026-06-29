@@ -68,6 +68,21 @@
 
       <dl>
         <div>
+          <dt>Status</dt>
+          <dd>
+            <% if (book.status === 'currently_reading') { %>
+              <span style="color: var(--primary); font-weight: 600;">Currently Reading</span>
+            <% } else if (book.status === 'want_to_read') { %>
+              <span style="color: var(--warning); font-weight: 600;">Want to Read</span>
+            <% } else if (book.status === 'dnf') { %>
+              <span style="color: var(--danger); font-weight: 600;">Did Not Finish</span>
+            <% } else { %>
+              <span style="color: var(--success); font-weight: 600;">Read</span>
+            <% } %>
+          </dd>
+        </div>
+
+        <div>
           <dt>Rating</dt>
           <dd><%= book.rating ? `${book.rating}/10` : "Not rated" %></dd>
         </div>

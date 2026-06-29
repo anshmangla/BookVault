@@ -472,7 +472,8 @@ router.post("/add", isAuthenticated, async (req, res, next) => {
       google_volume_id,
       tags,
       has_spoilers,
-      visibility
+      visibility,
+      status
     } = req.body;
 
     const cleanTitle =
@@ -589,14 +590,16 @@ router.post("/add", isAuthenticated, async (req, res, next) => {
         categories,
         language,
         has_spoilers,
-        visibility
+        visibility,
+        status
       )
       VALUES
       (
         $1,$2,$3,$4,
         $5,$6,$7,$8,$9,$10,
         $11,$12,$13,$14,$15,
-        $16,$17,$18,$19,$20
+        $16,$17,$18,$19,$20,
+        $21
       )
       RETURNING id
       `,
@@ -622,7 +625,8 @@ router.post("/add", isAuthenticated, async (req, res, next) => {
         googleBook?.categories || [],
         googleBook?.language || null,
         has_spoilers === "on" || has_spoilers === "true",
-        visibility === 'private' ? 'private' : 'public'
+        visibility === 'private' ? 'private' : 'public',
+        ['read', 'currently_reading', 'want_to_read', 'dnf'].includes(status) ? status : 'read'
       ]
     );
 
@@ -632,7 +636,7 @@ router.post("/add", isAuthenticated, async (req, res, next) => {
     await syncBookTags(newBookId, req.session.userId, tags);
 
     // Record activity
-    if (visibility !== 'private') {
+    if (visibility !== 'private' && (status === 'read' || status === 'currently_reading' || !status)) {
       await db.query(
         `INSERT INTO activities (user_id, book_id, action_type) VALUES ($1, $2, 'added_book')`,
         [req.session.userId, newBookId]
@@ -803,7 +807,8 @@ router.put("/edit/:id", isAuthenticated, async (req, res, next) => {
       date_read,
       tags,
       has_spoilers,
-      visibility
+      visibility,
+      status
     } = req.body;
 
     const cleanTitle =
@@ -850,7 +855,8 @@ router.put("/edit/:id", isAuthenticated, async (req, res, next) => {
         review = $7,
         date_read = $8,
         has_spoilers = $9,
-        visibility = $10
+        visibility = $10,
+        status = $13
       WHERE id = $11
       AND user_id = $12
       AND deleted_at IS NULL
@@ -868,7 +874,8 @@ router.put("/edit/:id", isAuthenticated, async (req, res, next) => {
         has_spoilers === "on" || has_spoilers === "true",
         visibility === 'private' ? 'private' : 'public',
         req.params.id,
-        req.session.userId
+        req.session.userId,
+        ['read', 'currently_reading', 'want_to_read', 'dnf'].includes(status) ? status : 'read'
       ]
     );
 

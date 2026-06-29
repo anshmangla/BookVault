@@ -12,7 +12,9 @@
     "migrate:analytics": "node scripts/runAnalyticsMigration.js",
     "migrate:phase9": "node scripts/runPhase9Migration.js",
     "migrate:phase10": "node scripts/runPhase10Migration.js",
-    "migrate:phase11": "node scripts/runPhase11Migration.js"
+    "migrate:phase11": "node scripts/runPhase11Migration.js",
+    "migrate:phase12": "node scripts/runPhase12Migration.js",
+    "migrate:phase13": "node scripts/runPhase13Migration.js"
   },
   "keywords": [],
   "author": "",

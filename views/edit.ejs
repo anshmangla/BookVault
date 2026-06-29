@@ -178,6 +178,16 @@
               <option value="private" <%= book.visibility === 'private' ? 'selected' : '' %>>Private (Only visible to you)</option>
             </select>
           </div>
+
+          <div class="form-field">
+            <label class="form-label" for="status">Reading Status</label>
+            <select class="form-control" id="status" name="status">
+              <option value="read" <%= (!book.status || book.status === 'read') ? 'selected' : '' %>>Read</option>
+              <option value="currently_reading" <%= book.status === 'currently_reading' ? 'selected' : '' %>>Currently Reading</option>
+              <option value="want_to_read" <%= book.status === 'want_to_read' ? 'selected' : '' %>>Want to Read</option>
+              <option value="dnf" <%= book.status === 'dnf' ? 'selected' : '' %>>Did Not Finish (DNF)</option>
+            </select>
+          </div>
         </div>
       </section>
 

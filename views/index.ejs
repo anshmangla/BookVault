@@ -26,6 +26,7 @@
       year: filters.year || "",
       page: filters.page,
       favorites: filters.favorites || "",
+      status: filters.status || "",
       ...overrides
     };
     const params =
@@ -51,6 +52,12 @@
     }
     if (state.favorites) {
       params.set("favorites", "1");
+    }
+    if (
+      state.status &&
+      state.status !== "all"
+    ) {
+      params.set("status", state.status);
     }
     if (state.page && state.page > 1) {
       params.set("page", state.page);
@@ -186,6 +193,31 @@
         <%= filters.favorites ? 'Showing Favorites' : 'Favorites' %>
       </a>
     </div>
+
+    <% if (totalBooks > 0 || (filters.status && filters.status !== "all")) { %>
+      <div class="connections-tabs" style="display: flex; gap: 2rem; margin-bottom: 2rem; border-bottom: 1px solid var(--border); overflow-x: auto; white-space: nowrap;">
+        <a href="<%= libraryUrl({ status: 'all', page: 1 }) %>" 
+           style="padding: 1rem 0; text-decoration: none; font-weight: 600; color: <%= (!filters.status || filters.status === 'all') ? 'var(--primary)' : 'var(--text-light)' %>; border-bottom: 3px solid <%= (!filters.status || filters.status === 'all') ? 'var(--primary)' : 'transparent' %>;">
+          All Books
+        </a>
+        <a href="<%= libraryUrl({ status: 'read', page: 1 }) %>" 
+           style="padding: 1rem 0; text-decoration: none; font-weight: 600; color: <%= filters.status === 'read' ? 'var(--primary)' : 'var(--text-light)' %>; border-bottom: 3px solid <%= filters.status === 'read' ? 'var(--primary)' : 'transparent' %>;">
+          Read
+        </a>
+        <a href="<%= libraryUrl({ status: 'currently_reading', page: 1 }) %>" 
+           style="padding: 1rem 0; text-decoration: none; font-weight: 600; color: <%= filters.status === 'currently_reading' ? 'var(--primary)' : 'var(--text-light)' %>; border-bottom: 3px solid <%= filters.status === 'currently_reading' ? 'var(--primary)' : 'transparent' %>;">
+          Currently Reading
+        </a>
+        <a href="<%= libraryUrl({ status: 'want_to_read', page: 1 }) %>" 
+           style="padding: 1rem 0; text-decoration: none; font-weight: 600; color: <%= filters.status === 'want_to_read' ? 'var(--primary)' : 'var(--text-light)' %>; border-bottom: 3px solid <%= filters.status === 'want_to_read' ? 'var(--primary)' : 'transparent' %>;">
+          Want to Read
+        </a>
+        <a href="<%= libraryUrl({ status: 'dnf', page: 1 }) %>" 
+           style="padding: 1rem 0; text-decoration: none; font-weight: 600; color: <%= filters.status === 'dnf' ? 'var(--primary)' : 'var(--text-light)' %>; border-bottom: 3px solid <%= filters.status === 'dnf' ? 'var(--primary)' : 'transparent' %>;">
+          Did Not Finish
+        </a>
+      </div>
+    <% } %>
 
     <% if (totalBooks > 0) { %>
 
