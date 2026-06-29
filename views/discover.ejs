@@ -1,0 +1,132 @@
+<%- include("partials/header") %>
+
+<main class="page-shell">
+
+  <%- include("partials/page-header", {
+    eyebrow: "Recommendations",
+    icon: "compass",
+    title: "Discover",
+    description: "New books tailored to your reading history and network."
+  }) %>
+
+  <%- include("partials/action-toast") %>
+
+  <% if (authorRecommendations.length === 0 && networkRecommendations.length === 0 && trendingRecommendations.length === 0) { %>
+    <%- include("partials/empty-state", {
+      icon: "telescope",
+      title: "Not enough data yet",
+      description: "Rate more books and follow more people to get personalized recommendations.",
+      actionHref: "/",
+      actionLabel: "Back to Library",
+      actionIcon: "arrow-left"
+    }) %>
+  <% } else { %>
+
+    <% if (authorRecommendations.length > 0) { %>
+      <section class="library-section" aria-labelledby="author-recs-heading" style="margin-bottom: 4rem;">
+        <div class="library-section-head">
+          <div>
+            <p class="library-section-kicker">Because of your favorites</p>
+            <h2 id="author-recs-heading" class="library-heading">More from Authors You Love</h2>
+          </div>
+        </div>
+
+        <div class="row book-grid">
+          <% authorRecommendations.forEach(book => { %>
+            <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+              <div class="book-card-wrapper h-100" style="position: relative;">
+                <%- include("partials/book-card", { book, discoverMode: true }) %>
+                <div style="margin-top: 0.5rem; text-align: center;">
+                  <form action="/add" method="POST">
+                    <input type="hidden" name="title" value="<%= book.title %>">
+                    <input type="hidden" name="author" value="<%= book.author %>">
+                    <input type="hidden" name="cover_url" value="<%= book.cover_url %>">
+                    <input type="hidden" name="status" value="want_to_read">
+                    <button type="submit" class="btn btn-secondary btn-compact" style="width: 100%;">
+                      <i data-lucide="plus" aria-hidden="true" style="width: 16px; height: 16px;"></i>
+                      Want to Read
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </section>
+    <% } %>
+
+    <% if (networkRecommendations.length > 0) { %>
+      <section class="library-section" aria-labelledby="network-recs-heading" style="margin-bottom: 4rem;">
+        <div class="library-section-head">
+          <div>
+            <p class="library-section-kicker">From your network</p>
+            <h2 id="network-recs-heading" class="library-heading">Highly Rated by People You Follow</h2>
+          </div>
+        </div>
+
+        <div class="row book-grid">
+          <% networkRecommendations.forEach(book => { %>
+            <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+              <div class="book-card-wrapper h-100" style="position: relative;">
+                <%- include("partials/book-card", { book, discoverMode: true }) %>
+                <p style="font-size: 0.8rem; color: var(--text-light); text-align: center; margin-top: 0.5rem;">
+                  <i data-lucide="user" aria-hidden="true" style="width: 12px; height: 12px; vertical-align: middle;"></i>
+                  Recommended by <strong><%= book.recommended_by %></strong>
+                </p>
+                <div style="margin-top: 0.25rem; text-align: center;">
+                  <form action="/add" method="POST">
+                    <input type="hidden" name="title" value="<%= book.title %>">
+                    <input type="hidden" name="author" value="<%= book.author %>">
+                    <input type="hidden" name="cover_url" value="<%= book.cover_url %>">
+                    <input type="hidden" name="status" value="want_to_read">
+                    <button type="submit" class="btn btn-secondary btn-compact" style="width: 100%;">
+                      <i data-lucide="plus" aria-hidden="true" style="width: 16px; height: 16px;"></i>
+                      Want to Read
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </section>
+    <% } %>
+
+    <% if (trendingRecommendations.length > 0) { %>
+      <section class="library-section" aria-labelledby="trending-recs-heading" style="margin-bottom: 4rem;">
+        <div class="library-section-head">
+          <div>
+            <p class="library-section-kicker">Trending</p>
+            <h2 id="trending-recs-heading" class="library-heading">Top Rated on BookVault</h2>
+          </div>
+        </div>
+
+        <div class="row book-grid">
+          <% trendingRecommendations.forEach(book => { %>
+            <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+              <div class="book-card-wrapper h-100" style="position: relative;">
+                <%- include("partials/book-card", { book, discoverMode: true }) %>
+                <div style="margin-top: 0.5rem; text-align: center;">
+                  <form action="/add" method="POST">
+                    <input type="hidden" name="title" value="<%= book.title %>">
+                    <input type="hidden" name="author" value="<%= book.author %>">
+                    <input type="hidden" name="cover_url" value="<%= book.cover_url %>">
+                    <input type="hidden" name="status" value="want_to_read">
+                    <button type="submit" class="btn btn-secondary btn-compact" style="width: 100%;">
+                      <i data-lucide="plus" aria-hidden="true" style="width: 16px; height: 16px;"></i>
+                      Want to Read
+                    </button>
+                  </form>
+                </div>
+              </div>
+            </div>
+          <% }) %>
+        </div>
+      </section>
+    <% } %>
+
+  <% } %>
+
+</main>
+
+<%- include("partials/footer") %>

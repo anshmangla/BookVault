@@ -1,0 +1,55 @@
+<article class="book-card h-100" style="--stagger: <%= typeof index !== 'undefined' ? index : 0 %>;">
+  <% const isDiscover = typeof discoverMode !== 'undefined' && discoverMode; %>
+  <% if (!isDiscover) { %>
+  <a href="/book/<%= book.id %>" class="book-card-link">
+  <% } else { %>
+  <div class="book-card-link" style="cursor: default;">
+  <% } %>
+    <div class="cover-container">
+      <% if (book.cover_url && book.cover_url.startsWith('http')) { %>
+        <img src="<%= book.cover_url %>" class="book-cover" alt="<%= book.title %> cover" loading="lazy">
+      <% } else { %>
+        <div class="cover-placeholder" aria-hidden="true">
+          <i data-lucide="book-open"></i>
+        </div>
+      <% } %>
+
+      <% if (book.rating) { %>
+        <span class="book-rating-badge">
+          <i data-lucide="star" aria-hidden="true"></i>
+          <%= book.rating %>/10
+        </span>
+      <% } %>
+    </div>
+
+    <div class="book-card-body">
+      <h3 class="book-card-title"><%= book.title %></h3>
+      <p class="book-card-author">
+        <%= book.author || "Unknown author" %>
+      </p>
+
+      <div class="book-card-metadata">
+        <% if (book.date_read) { %>
+          <span>
+            <i data-lucide="calendar-check" aria-hidden="true"></i>
+            Read <%= new Date(book.date_read).toLocaleDateString(undefined, { month: 'short', year: 'numeric' }) %>
+          </span>
+        <% } else if (book.publish_year) { %>
+          <span>
+            <i data-lucide="calendar" aria-hidden="true"></i>
+            Published <%= book.publish_year %>
+          </span>
+        <% } else { %>
+          <span>
+            <i data-lucide="bookmark" aria-hidden="true"></i>
+            In your library
+          </span>
+        <% } %>
+      </div>
+    </div>
+  <% if (!isDiscover) { %>
+  </a>
+  <% } else { %>
+  </div>
+  <% } %>
+</article>

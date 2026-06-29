@@ -495,7 +495,8 @@ router.post("/add", isAuthenticated, async (req, res, next) => {
       tags,
       has_spoilers,
       visibility,
-      status
+      status,
+      cover_url
     } = req.body;
 
     const cleanTitle =
@@ -633,7 +634,7 @@ router.post("/add", isAuthenticated, async (req, res, next) => {
         rating || null,
         notes,
         review,
-        googleBook?.cover_url || "",
+        googleBook?.cover_url || cover_url || "",
         date_read || null,
         req.session.userId,
         googleBook?.google_volume_id ||
@@ -1209,5 +1210,103 @@ router.get(
 
   }
 );
+
+/*
+====================================
+DISCOVER (RECOMMENDATIONS)
+====================================
+*/
+
+router.get("/discover", isAuthenticated, async (req, res, next) => {
+  try {
+    const userId = req.session.userId;
+
+    // 1. Author Recommendations
+    // Find favorite authors (rated >= 8)
+    const favoriteAuthorsResult = await db.query(
+      `
+      SELECT author
+      FROM books
+      WHERE user_id = $1 AND rating >= 8 AND author IS NOT NULL AND TRIM(author) != ''
+      GROUP BY author
+      ORDER BY COUNT(*) DESC
+      LIMIT 5
+      `,
+      [userId]
+    );
+
+    let authorRecommendations = [];
+    if (favoriteAuthorsResult.rows.length > 0) {
+      const authors = favoriteAuthorsResult.rows.map(row => row.author);
+      const authorList = authors.map(a => `'${a.replace(/'/g, "''")}'`).join(", ");
+      
+      const authorRecResult = await db.query(
+        `
+        SELECT DISTINCT ON (LOWER(title))
+          id, title, author, cover_url, rating
+        FROM books
+        WHERE author IN (${authorList})
+        AND deleted_at IS NULL
+        AND LOWER(title) NOT IN (
+          SELECT LOWER(title) FROM books WHERE user_id = $1 AND deleted_at IS NULL
+        )
+        ORDER BY LOWER(title), rating DESC
+        LIMIT 6
+        `,
+        [userId]
+      );
+      authorRecommendations = authorRecResult.rows;
+    }
+
+    // 2. Network Recommendations
+    const networkRecResult = await db.query(
+      `
+      SELECT DISTINCT ON (LOWER(b.title))
+        b.id, b.title, b.author, b.cover_url, b.rating, u.username as recommended_by
+      FROM books b
+      JOIN follows f ON f.following_id = b.user_id
+      JOIN users u ON u.id = b.user_id
+      WHERE f.follower_id = $1
+      AND b.rating >= 8
+      AND b.deleted_at IS NULL
+      AND LOWER(b.title) NOT IN (
+        SELECT LOWER(title) FROM books WHERE user_id = $1 AND deleted_at IS NULL
+      )
+      ORDER BY LOWER(b.title), b.rating DESC
+      LIMIT 6
+      `,
+      [userId]
+    );
+    const networkRecommendations = networkRecResult.rows;
+
+    // 3. Trending/Platform Recommendations
+    const trendingRecResult = await db.query(
+      `
+      SELECT DISTINCT ON (LOWER(title))
+        id, title, author, cover_url, rating
+      FROM books
+      WHERE rating >= 9
+      AND deleted_at IS NULL
+      AND LOWER(title) NOT IN (
+        SELECT LOWER(title) FROM books WHERE user_id = $1 AND deleted_at IS NULL
+      )
+      ORDER BY LOWER(title), rating DESC
+      LIMIT 6
+      `,
+      [userId]
+    );
+    const trendingRecommendations = trendingRecResult.rows;
+
+    res.render("discover", {
+      pageTitle: "Discover",
+      authorRecommendations,
+      networkRecommendations,
+      trendingRecommendations
+    });
+
+  } catch (err) {
+    next(err);
+  }
+});
 
 module.exports = router;
