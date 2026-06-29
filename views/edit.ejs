@@ -97,6 +97,19 @@
           min: 1,
           max: new Date().getFullYear() + 1
         }) %>
+
+        <div class="form-field">
+          <label class="form-label" for="tags">Tags</label>
+          <input
+            type="text"
+            id="tags"
+            name="tags"
+            class="form-control"
+            value="<%= (bookTags || []).join(', ') %>"
+            placeholder="sci-fi, favorites, summer-read"
+            autocomplete="off">
+          <small class="tag-input-help">Separate tags with commas. Letters, numbers, hyphens and # only.</small>
+        </div>
       </section>
 
       <section class="form-section" aria-labelledby="reading-details">
@@ -144,6 +157,28 @@
           rows: 8,
           value: book.review || ""
         }) %>
+
+        <div class="form-field">
+          <div class="form-check" style="margin-bottom: 1.5rem;">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="has_spoilers"
+              name="has_spoilers"
+              <%= book.has_spoilers ? 'checked' : '' %>>
+            <label class="form-check-label" for="has_spoilers">
+              This review contains spoilers
+            </label>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="visibility">Visibility</label>
+            <select class="form-control" id="visibility" name="visibility">
+              <option value="public" <%= (!book.visibility || book.visibility === 'public') ? 'selected' : '' %>>Public (Shows on your public profile if active)</option>
+              <option value="private" <%= book.visibility === 'private' ? 'selected' : '' %>>Private (Only visible to you)</option>
+            </select>
+          </div>
+        </div>
       </section>
 
       <div class="form-actions">

@@ -228,6 +228,43 @@
               helpText: "Write your overall opinion of the book."
             }) %>
           </div>
+
+          <div class="form-grid-full">
+            <div class="form-field">
+              <label class="form-label" for="tags">Tags</label>
+              <input
+                type="text"
+                id="tags"
+                name="tags"
+                class="form-control"
+                placeholder="sci-fi, favorites, summer-read"
+                autocomplete="off">
+              <small class="tag-input-help">Separate tags with commas. Letters, numbers, hyphens and # only.</small>
+            </div>
+          </div>
+
+          <div class="form-grid-full">
+            <div class="form-field">
+              <div class="form-check" style="margin-bottom: 1.5rem;">
+                <input
+                  class="form-check-input"
+                  type="checkbox"
+                  id="has_spoilers"
+                  name="has_spoilers">
+                <label class="form-check-label" for="has_spoilers">
+                  This review contains spoilers
+                </label>
+              </div>
+            </div>
+
+            <div class="form-field">
+              <label class="form-label" for="visibility">Visibility</label>
+              <select class="form-control" id="visibility" name="visibility">
+                <option value="public" selected>Public (Shows on your public profile if active)</option>
+                <option value="private">Private (Only visible to you)</option>
+              </select>
+            </div>
+          </div>
         </div>
       </section>
 

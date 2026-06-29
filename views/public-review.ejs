@@ -1,0 +1,112 @@
+<%- include("partials/header") %>
+
+<main class="page-shell">
+
+  <div class="mb-4">
+    <a href="/u/<%= profileUser.username %>" class="btn btn-secondary btn-compact">
+      <i data-lucide="arrow-left" aria-hidden="true"></i>
+      Back to <%= profileUser.username %>'s Library
+    </a>
+  </div>
+
+  <section class="surface-card book-detail-card" style="margin-top: 0;">
+
+    <%- include("partials/book-cover", {
+      book,
+      coverClass: "book-detail-cover",
+      eager: true
+    }) %>
+
+    <div class="book-detail-metadata">
+      <h1 style="font-size: 2rem; margin-bottom: 0.5rem;"><%= book.title %></h1>
+      <p style="font-size: 1.1rem; color: var(--text-light); margin-bottom: 1.5rem;"><%= book.author || "Unknown author" %></p>
+
+      <dl>
+        <div>
+          <dt>Rating</dt>
+          <dd><%= book.rating ? `${book.rating}/10` : "Not rated" %></dd>
+        </div>
+        <div>
+          <dt>Read by</dt>
+          <dd>
+            <div style="display:flex;align-items:center;gap:8px;">
+              <% if (profileUser.avatar_url) { %>
+                <img src="<%= profileUser.avatar_url %>" alt="" style="width:24px;height:24px;border-radius:50%;object-fit:cover;">
+              <% } else { %>
+                <div style="width:24px;height:24px;border-radius:50%;background:var(--primary-soft);color:var(--primary);display:flex;align-items:center;justify-content:center;">
+                  <i data-lucide="user" style="width:12px;height:12px;"></i>
+                </div>
+              <% } %>
+              <strong><%= profileUser.username %></strong>
+            </div>
+          </dd>
+        </div>
+        <% if (book.date_read) { %>
+          <div>
+            <dt>Date read</dt>
+            <dd><%= new Date(book.date_read).toLocaleDateString() %></dd>
+          </div>
+        <% } %>
+      </dl>
+
+      <% if (tags && tags.length) { %>
+        <div class="book-tag-list" aria-label="Tags">
+          <% tags.forEach(tag => { %>
+            <span class="tag-pill">#<%= tag %></span>
+          <% }) %>
+        </div>
+      <% } %>
+
+      <div style="margin-top: 2rem;">
+        <button class="btn btn-light" onclick="navigator.clipboard.writeText(window.location.href); alert('Link copied to clipboard!');">
+          <i data-lucide="share-2" aria-hidden="true"></i>
+          Share Review
+        </button>
+      </div>
+
+    </div>
+
+  </section>
+
+  <div class="book-detail-sections">
+    <section class="surface-card book-text-section spoiler-section" id="reviewSection">
+      <h2>Review</h2>
+      <% if (book.has_spoilers && book.review) { %>
+        <div id="spoilerOverlay" class="spoiler-overlay" role="status">
+          <p>
+            <i data-lucide="triangle-alert" aria-hidden="true"></i>
+            This review contains spoilers
+          </p>
+          <button
+            type="button"
+            class="btn btn-light"
+            id="revealSpoilerBtn"
+            aria-controls="spoilerContent">
+            Reveal Review
+          </button>
+        </div>
+        <div id="spoilerContent" class="spoiler-content blurred" aria-live="polite">
+          <p class="reader-prose"><%= book.review %></p>
+        </div>
+      <% } else { %>
+        <p class="<%= book.review ? "reader-prose" : "empty-copy" %>"><%= book.review || "No review written." %></p>
+      <% } %>
+    </section>
+  </div>
+
+</main>
+
+<script>
+  // Spoiler reveal
+  const revealBtn = document.getElementById("revealSpoilerBtn");
+  if (revealBtn) {
+    revealBtn.addEventListener("click", () => {
+      const overlay = document.getElementById("spoilerOverlay");
+      const content = document.getElementById("spoilerContent");
+      content.classList.remove("blurred");
+      overlay.remove();
+    });
+  }
+</script>
+
+<%- include("partials/footer") %>

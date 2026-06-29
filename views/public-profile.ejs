@@ -1,0 +1,95 @@
+<%- include("partials/header") %>
+
+<main class="library-page">
+
+  <section class="hero-section" style="padding: 3rem 1rem;">
+    <div class="hero-inner" style="align-items: center; text-align: center;">
+      <% if (profileUser.avatar_url) { %>
+        <img src="<%= profileUser.avatar_url %>" alt="<%= profileUser.username %>'s avatar" style="width: 96px; height: 96px; border-radius: 50%; object-fit: cover; margin-bottom: 1rem; border: 2px solid var(--border);">
+      <% } else { %>
+        <div style="width: 96px; height: 96px; border-radius: 50%; background: var(--primary-soft); color: var(--primary); display: flex; align-items: center; justify-content: center; margin: 0 auto 1rem auto;">
+          <i data-lucide="user" style="width: 40px; height: 40px;"></i>
+        </div>
+      <% } %>
+      <h1 class="hero-title" style="font-size: 2rem;"><%= profileUser.username %>'s Library</h1>
+      <% if (profileUser.bio) { %>
+        <p class="hero-description" style="max-width: 600px;"><%= profileUser.bio %></p>
+      <% } %>
+      <div class="library-overview-stats" aria-label="Library statistics" style="justify-content: center; margin-top: 1.5rem;">
+        <div>
+          <i data-lucide="library-big" aria-hidden="true"></i>
+          <strong><%= totalBooks %></strong>
+          <span><%= totalBooks === 1 ? "Book" : "Books" %></span>
+        </div>
+        <div>
+          <i data-lucide="star" aria-hidden="true"></i>
+          <strong><%= avgRating %></strong>
+          <span>Average rating</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="library-section">
+    <div class="library-section-head">
+      <div>
+        <p class="library-section-kicker">Collection</p>
+        <h2 class="library-heading">Public Books</h2>
+      </div>
+    </div>
+
+    <% if (books.length === 0) { %>
+      <%- include("partials/empty-state", {
+        icon: "library-big",
+        title: "No public books",
+        description: "This user hasn't added any public books to their library yet.",
+        actionHref: null
+      }) %>
+    <% } else { %>
+      <div class="row book-grid">
+        <% books.forEach((book, index) => { %>
+          <div class="col-xl-3 col-lg-4 col-md-6 mb-4">
+            <article class="book-card h-100" style="--stagger:<%= index %>">
+              <a href="/u/<%= profileUser.username %>/review/<%= book.id %>" class="book-card-link">
+                <div class="cover-container">
+                  <% if (book.cover_url) { %>
+                    <img src="<%= book.cover_url %>" class="book-cover" alt="<%= book.title %> cover" loading="lazy">
+                  <% } else { %>
+                    <div class="cover-placeholder" aria-hidden="true">
+                      <i data-lucide="book-open"></i>
+                    </div>
+                  <% } %>
+                  <% if (book.rating) { %>
+                    <span class="book-rating-badge">
+                      <i data-lucide="star" aria-hidden="true"></i>
+                      <%= book.rating %>/10
+                    </span>
+                  <% } %>
+                </div>
+                <div class="book-card-body">
+                  <h3 class="book-card-title"><%= book.title %></h3>
+                  <p class="book-card-author"><%= book.author || "Unknown author" %></p>
+                  <% if (book.review) { %>
+                    <% if (book.has_spoilers) { %>
+                      <div class="review-preview" style="display:flex;align-items:center;gap:6px;">
+                        <i data-lucide="triangle-alert" style="width:13px;height:13px;color:var(--warning);flex-shrink:0;"></i>
+                        <span style="font-size:0.75rem;color:var(--text-light);font-style:italic;">Spoiler review — click to view</span>
+                      </div>
+                    <% } else { %>
+                      <div class="review-preview">
+                        <p><%= book.review %></p>
+                      </div>
+                    <% } %>
+                  <% } %>
+                </div>
+              </a>
+            </article>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+
+</main>
+
+<%- include("partials/footer") %>

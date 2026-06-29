@@ -1,0 +1,289 @@
+/* =====================================================
+   Tags, Favorites & Spoiler-gate — Phase 9
+   ===================================================== */
+
+/* --- Tag pills (display) --- */
+
+.tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.2rem;
+  padding: 2px 10px;
+  background: var(--primary-soft);
+  color: var(--primary);
+  border: 1px solid rgba(99, 102, 241, 0.25);
+  border-radius: var(--radius-pill);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
+}
+
+html.dark .tag-pill {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.35);
+  color: #A5B4FC;
+}
+
+/* --- Tag pills list --- */
+
+.book-tag-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin-top: var(--space-2);
+}
+
+/* --- Tag filter bar on library page --- */
+
+.tag-filter-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.tag-filter-bar-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: var(--text-light);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tag-filter-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+  padding: 4px 12px;
+  background: var(--surface);
+  color: var(--text-light);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-pill);
+  font-size: 0.78rem;
+  font-weight: 600;
+  text-decoration: none;
+  transition: var(--transition);
+  cursor: pointer;
+}
+
+.tag-filter-pill:hover {
+  color: var(--primary);
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.tag-filter-pill.active {
+  background: var(--primary);
+  color: #fff;
+  border-color: var(--primary);
+}
+
+.tag-filter-pill.active:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
+html.dark .tag-filter-pill {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text-light);
+}
+
+html.dark .tag-filter-pill:hover {
+  background: rgba(99, 102, 241, 0.15);
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #A5B4FC;
+}
+
+/* --- Favorite button --- */
+
+.btn-favorite {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  padding: 8px 14px;
+  background: var(--surface);
+  color: var(--text-light);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  font-size: 0.8125rem;
+  font-weight: 650;
+  cursor: pointer;
+  transition: var(--transition);
+  line-height: 1;
+}
+
+.btn-favorite svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  transition: transform 0.18s ease;
+}
+
+.btn-favorite:hover {
+  color: #F43F5E;
+  border-color: #F43F5E;
+  background: #FFF1F2;
+}
+
+.btn-favorite.is-favorite {
+  color: #F43F5E;
+  background: #FFF1F2;
+  border-color: #F43F5E;
+}
+
+.btn-favorite.is-favorite svg {
+  fill: #F43F5E;
+}
+
+.btn-favorite.is-favorite:hover {
+  background: #FFE4E6;
+}
+
+.btn-favorite.loading {
+  pointer-events: none;
+  opacity: 0.6;
+}
+
+html.dark .btn-favorite {
+  background: var(--surface);
+  border-color: var(--border);
+  color: var(--text-light);
+}
+
+html.dark .btn-favorite:hover,
+html.dark .btn-favorite.is-favorite {
+  color: #FB7185;
+  background: rgba(244, 63, 94, 0.12);
+  border-color: rgba(244, 63, 94, 0.45);
+}
+
+html.dark .btn-favorite.is-favorite svg {
+  fill: #FB7185;
+}
+
+/* Compact card version of the favorite button */
+
+.btn-favorite-card {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  background: transparent;
+  border: none;
+  border-radius: var(--radius-sm);
+  color: var(--text-light);
+  cursor: pointer;
+  transition: var(--transition);
+  flex-shrink: 0;
+}
+
+.btn-favorite-card svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+}
+
+.btn-favorite-card:hover {
+  color: #F43F5E;
+  background: #FFF1F2;
+}
+
+.btn-favorite-card.is-favorite {
+  color: #F43F5E;
+}
+
+.btn-favorite-card.is-favorite svg {
+  fill: #F43F5E;
+}
+
+html.dark .btn-favorite-card:hover {
+  color: #FB7185;
+  background: rgba(244, 63, 94, 0.12);
+}
+
+html.dark .btn-favorite-card.is-favorite {
+  color: #FB7185;
+}
+
+html.dark .btn-favorite-card.is-favorite svg {
+  fill: #FB7185;
+}
+
+/* --- Spoiler gate --- */
+
+.spoiler-section {
+  position: relative;
+}
+
+.spoiler-content {
+  transition: filter 0.25s ease;
+}
+
+.spoiler-content.blurred {
+  filter: blur(6px);
+  user-select: none;
+  pointer-events: none;
+}
+
+.spoiler-overlay {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-3);
+  background: rgba(255, 255, 255, 0.6);
+  backdrop-filter: blur(2px);
+  border-radius: var(--radius);
+  z-index: 1;
+}
+
+html.dark .spoiler-overlay {
+  background: rgba(15, 23, 42, 0.6);
+}
+
+.spoiler-overlay p {
+  margin: 0;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--text);
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.spoiler-overlay p svg {
+  width: 16px;
+  height: 16px;
+  color: var(--warning);
+}
+
+/* --- Tag input on forms --- */
+
+.tag-input-help {
+  margin-top: var(--space-1);
+  font-size: 0.75rem;
+  color: var(--text-light);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .spoiler-content {
+    transition: none;
+  }
+  .btn-favorite,
+  .btn-favorite-card {
+    transition: none;
+  }
+  .btn-favorite svg,
+  .btn-favorite-card svg {
+    transition: none;
+  }
+}

@@ -55,6 +55,7 @@ function normalizeLibraryQuery(query = {}) {
     sort,
     rating,
     year,
+    favorites: Boolean(query.favorites),
     page: positiveInteger(query.page, 1)
   };
 }
@@ -97,6 +98,10 @@ function buildLibraryWhere(
     conditions.push(
       `EXTRACT(YEAR FROM date_read) = $${values.length}`
     );
+  }
+
+  if (filters.favorites) {
+    conditions.push("is_favorite = TRUE");
   }
 
   return {

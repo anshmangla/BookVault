@@ -2,7 +2,9 @@
   const hasFilters =
     Boolean(filters.q) ||
     filters.rating !== "all" ||
-    Boolean(filters.year);
+    Boolean(filters.year) ||
+    Boolean(selectedTag) ||
+    Boolean(filters.favorites);
   const resultStart =
     totalResults > 0
       ? (
@@ -23,6 +25,7 @@
       rating: filters.rating,
       year: filters.year || "",
       page: filters.page,
+      favorites: filters.favorites || "",
       ...overrides
     };
     const params =
@@ -45,6 +48,9 @@
     }
     if (state.year) {
       params.set("year", state.year);
+    }
+    if (state.favorites) {
+      params.set("favorites", "1");
     }
     if (state.page && state.page > 1) {
       params.set("page", state.page);
@@ -156,7 +162,9 @@
       <div>
         <p class="library-section-kicker">Collection</p>
         <h2 id="books-heading" class="library-heading">
-          <% if (filters.q) { %>
+          <% if (filters.favorites) { %>
+            Favorites
+          <% } else if (filters.q) { %>
             Results for “<%= filters.q %>”
           <% } else { %>
             Books
@@ -170,6 +178,13 @@
           Clear Filters
         </a>
       <% } %>
+
+      <a
+        href="<%= libraryUrl({ favorites: filters.favorites ? '' : '1', page: 1 }) %>"
+        class="btn btn-compact<%= filters.favorites ? ' btn-primary' : ' btn-light' %>">
+        <i data-lucide="heart" aria-hidden="true"></i>
+        <%= filters.favorites ? 'Showing Favorites' : 'Favorites' %>
+      </a>
     </div>
 
     <% if (totalBooks > 0) { %>
@@ -272,6 +287,26 @@
 
       </form>
 
+      <% if (userTags && userTags.length) { %>
+        <div class="tag-filter-bar" aria-label="Filter by tag">
+          <span class="tag-filter-bar-label">Tags:</span>
+          <% userTags.forEach(tag => { %>
+            <a
+              href="/?tag=<%= encodeURIComponent(tag) %><%= filters.q ? `&q=${encodeURIComponent(filters.q)}` : '' %>"
+              class="tag-filter-pill<%= selectedTag === tag ? ' active' : '' %>"
+              aria-current="<%= selectedTag === tag ? 'true' : 'false' %>">
+              #<%= tag %>
+            </a>
+          <% }) %>
+          <% if (selectedTag) { %>
+            <a href="/" class="tag-filter-pill" style="margin-left: auto;">
+              <i data-lucide="x" aria-hidden="true" style="width:12px;height:12px;"></i>
+              Clear tag
+            </a>
+          <% } %>
+        </div>
+      <% } %>
+
       <div class="library-results-summary" aria-live="polite">
         <% if (totalResults > 0) { %>
           Showing <strong><%= resultStart %>–<%= resultEnd %></strong>
@@ -367,8 +402,23 @@
                   </div>
 
                   <% if (book.review) { %>
-                    <div class="review-preview">
-                      <p><%= book.review %></p>
+                    <% if (book.has_spoilers) { %>
+                      <div class="review-preview" style="display:flex;align-items:center;gap:6px;">
+                        <i data-lucide="triangle-alert" style="width:13px;height:13px;color:var(--warning);flex-shrink:0;"></i>
+                        <span style="font-size:0.75rem;color:var(--text-light);font-style:italic;">Spoiler review — view on details page</span>
+                      </div>
+                    <% } else { %>
+                      <div class="review-preview">
+                        <p><%= book.review %></p>
+                      </div>
+                    <% } %>
+                  <% } %>
+
+                  <% if (book.tags && book.tags.length) { %>
+                    <div class="book-tag-list" aria-label="Tags">
+                      <% book.tags.forEach(tag => { %>
+                        <span class="tag-pill">#<%= tag %></span>
+                      <% }) %>
                     </div>
                   <% } %>
                 </div>
@@ -380,46 +430,58 @@
                   <%= book.google_volume_id ? "Google Books" : "Manual entry" %>
                 </span>
 
-                <div class="dropdown">
+                <div style="display:flex;align-items:center;gap:4px;">
                   <button
-                    class="btn btn-card-menu"
                     type="button"
-                    data-bs-toggle="dropdown"
-                    aria-expanded="false"
-                    aria-label="Manage <%= book.title %>">
-                    <i data-lucide="ellipsis" aria-hidden="true"></i>
+                    class="btn-favorite-card<%= book.is_favorite ? ' is-favorite' : '' %>"
+                    data-book-id="<%= book.id %>"
+                    aria-label="<%= book.is_favorite ? 'Remove from favorites' : 'Add to favorites' %>"
+                    aria-pressed="<%= book.is_favorite ? 'true' : 'false' %>">
+                    <i data-lucide="heart" aria-hidden="true"></i>
                   </button>
 
-                  <ul class="dropdown-menu dropdown-menu-end">
-                    <li>
-                      <a class="dropdown-item" href="/book/<%= book.id %>">
-                        <i data-lucide="eye" aria-hidden="true"></i>
-                        View Details
-                      </a>
-                    </li>
-                    <li>
-                      <a class="dropdown-item" href="/edit/<%= book.id %>">
-                        <i data-lucide="pencil" aria-hidden="true"></i>
-                        Edit
-                      </a>
-                    </li>
-                    <li><hr class="dropdown-divider"></li>
-                    <li>
-                      <form
-                        action="/delete/<%= book.id %>?_method=DELETE"
-                        method="POST"
-                        data-confirm-form
-                        data-confirm-title="Delete book?"
-                        data-confirm-message="Remove “<%= book.title %>” from your library? You can undo this from the next screen."
-                        data-confirm-label="Remove Book">
-                        <button type="submit" class="dropdown-item text-danger">
-                          <i data-lucide="trash-2" aria-hidden="true"></i>
-                          Delete
-                        </button>
-                      </form>
-                    </li>
-                  </ul>
+                  <div class="dropdown">
+                    <button
+                      class="btn btn-card-menu"
+                      type="button"
+                      data-bs-toggle="dropdown"
+                      aria-expanded="false"
+                      aria-label="Manage <%= book.title %>">
+                      <i data-lucide="ellipsis" aria-hidden="true"></i>
+                    </button>
+
+                    <ul class="dropdown-menu dropdown-menu-end">
+                      <li>
+                        <a class="dropdown-item" href="/book/<%= book.id %>">
+                          <i data-lucide="eye" aria-hidden="true"></i>
+                          View Details
+                        </a>
+                      </li>
+                      <li>
+                        <a class="dropdown-item" href="/edit/<%= book.id %>">
+                          <i data-lucide="pencil" aria-hidden="true"></i>
+                          Edit
+                        </a>
+                      </li>
+                      <li><hr class="dropdown-divider"></li>
+                      <li>
+                        <form
+                          action="/delete/<%= book.id %>?_method=DELETE"
+                          method="POST"
+                          data-confirm-form
+                          data-confirm-title="Delete book?"
+                          data-confirm-message="Remove &quot;<%= book.title %>&quot; from your library? You can undo this from the next screen."
+                          data-confirm-label="Remove Book">
+                          <button type="submit" class="dropdown-item text-danger">
+                            <i data-lucide="trash-2" aria-hidden="true"></i>
+                            Delete
+                          </button>
+                        </form>
+                      </li>
+                    </ul>
+                  </div>
                 </div>
+
               </div>
 
             </article>
@@ -481,6 +543,29 @@
 </main>
 
 <script>
+  // Favorite toggle on library cards
+  document.querySelectorAll(".btn-favorite-card").forEach(btn => {
+    btn.addEventListener("click", async (e) => {
+      e.stopPropagation(); // prevent card link navigation
+      const bookId = btn.dataset.bookId;
+      try {
+        const res = await fetch(`/book/${bookId}/favorite`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        if (!res.ok) throw new Error("Failed");
+        const data = await res.json();
+        const isFav = data.is_favorite;
+        btn.classList.toggle("is-favorite", isFav);
+        btn.setAttribute("aria-pressed", String(isFav));
+        btn.setAttribute("aria-label", isFav ? "Remove from favorites" : "Add to favorites");
+        if (typeof lucide !== "undefined") lucide.createIcons();
+      } catch (e) {
+        console.error("Favorite toggle failed:", e);
+      }
+    });
+  });
+
   const searchInput =
     document.getElementById("searchInput");
   const suggestions =

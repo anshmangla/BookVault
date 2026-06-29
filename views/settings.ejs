@@ -1,0 +1,76 @@
+<%- include("partials/header") %>
+
+<main class="page-shell">
+
+  <%- include("partials/page-header", {
+    eyebrow: "Settings",
+    icon: "settings",
+    title: "Your Profile",
+    description: "Manage your public profile and privacy settings."
+  }) %>
+
+  <%- include("partials/action-toast") %>
+
+  <section class="surface-card form-card" aria-label="Profile settings">
+
+    <form action="/settings?_method=PUT" method="POST">
+
+      <section class="form-section" aria-labelledby="profile-visibility">
+        <h2 class="form-section-title" id="profile-visibility">
+          Profile Visibility
+        </h2>
+
+        <div class="form-field">
+          <div class="form-check">
+            <input
+              class="form-check-input"
+              type="checkbox"
+              id="is_public"
+              name="is_public"
+              <%= userProfile.is_public ? 'checked' : '' %>>
+            <label class="form-check-label" for="is_public">
+              <strong>Make my profile public</strong>
+              <br>
+              <small class="text-muted">If checked, anyone can see your public library at <a href="/u/<%= userProfile.username %>" target="_blank">/u/<%= userProfile.username %></a>.</small>
+            </label>
+          </div>
+        </div>
+      </section>
+
+      <section class="form-section" aria-labelledby="profile-details">
+        <h2 class="form-section-title" id="profile-details">
+          Profile Details
+        </h2>
+
+        <%- include("partials/form-field", {
+          label: "Bio",
+          name: "bio",
+          type: "textarea",
+          rows: 4,
+          value: userProfile.bio || "",
+          helpText: "A short bio about your reading habits or favorite genres."
+        }) %>
+
+        <%- include("partials/form-field", {
+          label: "Avatar URL",
+          name: "avatar_url",
+          value: userProfile.avatar_url || "",
+          helpText: "Paste a direct link to an image to use as your avatar."
+        }) %>
+
+      </section>
+
+      <div class="form-actions">
+        <button class="btn btn-primary" type="submit">
+          <i data-lucide="save" aria-hidden="true"></i>
+          Save Settings
+        </button>
+      </div>
+
+    </form>
+
+  </section>
+
+</main>
+
+<%- include("partials/footer") %>

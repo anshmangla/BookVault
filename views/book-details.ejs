@@ -22,18 +22,38 @@
       Edit Book
     </a>
 
+    <button
+      type="button"
+      class="btn-favorite<%= book.is_favorite ? ' is-favorite' : '' %>"
+      id="favoriteBtn"
+      data-book-id="<%= book.id %>"
+      aria-label="<%= book.is_favorite ? 'Remove from favorites' : 'Add to favorites' %>"
+      aria-pressed="<%= book.is_favorite ? 'true' : 'false' %>">
+      <i data-lucide="heart" aria-hidden="true"></i>
+      <span id="favoriteBtnLabel"><%= book.is_favorite ? 'Unfavorite' : 'Favorite' %></span>
+    </button>
+
     <form
       action="/delete/<%= book.id %>?_method=DELETE"
       method="POST"
       data-confirm-form
       data-confirm-title="Remove <%= book.title %>?"
-      data-confirm-message="Remove “<%= book.title %>” from your library? You can undo this from the next screen."
+      data-confirm-message="Remove &quot;<%= book.title %>&quot; from your library? You can undo this from the next screen."
       data-confirm-label="Remove Book">
       <button class="btn btn-danger-ghost" type="submit">
         <i data-lucide="trash-2" aria-hidden="true"></i>
         Delete
       </button>
     </form>
+    
+    <% if (book.visibility !== 'private') { %>
+      <div style="margin-left: auto;">
+        <button class="btn btn-light btn-compact" onclick="navigator.clipboard.writeText(window.location.origin + '/u/<%= userName %>/review/<%= book.id %>'); alert('Public link copied to clipboard! (Make sure your profile is set to Public in Settings)');">
+          <i data-lucide="share-2" aria-hidden="true"></i>
+          Share
+        </button>
+      </div>
+    <% } %>
   </div>
 
   <section class="surface-card book-detail-card">
@@ -52,15 +72,12 @@
           <dd><%= book.rating ? `${book.rating}/10` : "Not rated" %></dd>
         </div>
 
-        <div>
-          <dt>ISBN</dt>
-          <dd><%= book.isbn || "Not available" %></dd>
-        </div>
-
-        <div>
-          <dt>Publication year</dt>
-          <dd><%= book.publish_year || "Not available" %></dd>
-        </div>
+        <% if (book.publisher) { %>
+          <div>
+            <dt>Publisher</dt>
+            <dd><%= book.publisher %></dd>
+          </div>
+        <% } %>
 
         <% if (book.published_date) { %>
           <div>
@@ -69,17 +86,10 @@
           </div>
         <% } %>
 
-        <% if (book.publisher) { %>
-          <div>
-            <dt>Publisher</dt>
-            <dd><%= book.publisher %></dd>
-          </div>
-        <% } %>
-
         <% if (book.page_count) { %>
           <div>
-            <dt>Length</dt>
-            <dd><%= book.page_count %> pages</dd>
+            <dt>Pages</dt>
+            <dd><%= book.page_count.toLocaleString() %></dd>
           </div>
         <% } %>
 
@@ -111,6 +121,14 @@
         </div>
       <% } %>
 
+      <% if (bookTags && bookTags.length) { %>
+        <div class="book-tag-list" aria-label="Your tags">
+          <% bookTags.forEach(tag => { %>
+            <a href="/?tag=<%= encodeURIComponent(tag) %>" class="tag-pill">#<%= tag %></a>
+          <% }) %>
+        </div>
+      <% } %>
+
     </div>
 
   </section>
@@ -131,9 +149,28 @@
       <p class="<%= book.notes ? "reader-prose" : "empty-copy" %>"><%= book.notes || "No notes added yet." %></p>
     </section>
 
-    <section class="surface-card book-text-section">
+    <section class="surface-card book-text-section spoiler-section" id="reviewSection">
       <h2>Review</h2>
-      <p class="<%= book.review ? "reader-prose" : "empty-copy" %>"><%= book.review || "No review added yet." %></p>
+      <% if (book.has_spoilers && book.review) { %>
+        <div id="spoilerOverlay" class="spoiler-overlay" role="status">
+          <p>
+            <i data-lucide="triangle-alert" aria-hidden="true"></i>
+            This review contains spoilers
+          </p>
+          <button
+            type="button"
+            class="btn btn-light"
+            id="revealSpoilerBtn"
+            aria-controls="spoilerContent">
+            Reveal Review
+          </button>
+        </div>
+        <div id="spoilerContent" class="spoiler-content blurred" aria-live="polite">
+          <p class="reader-prose"><%= book.review %></p>
+        </div>
+      <% } else { %>
+        <p class="<%= book.review ? "reader-prose" : "empty-copy" %>"><%= book.review || "No review added yet." %></p>
+      <% } %>
     </section>
 
   </div>
@@ -144,5 +181,45 @@
   </a>
 
 </main>
+
+<script>
+  // Favorite toggle
+  const favoriteBtn = document.getElementById("favoriteBtn");
+  if (favoriteBtn) {
+    favoriteBtn.addEventListener("click", async () => {
+      favoriteBtn.classList.add("loading");
+      try {
+        const res = await fetch(`/book/${favoriteBtn.dataset.bookId}/favorite`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" }
+        });
+        if (!res.ok) throw new Error("Failed");
+        const data = await res.json();
+        const isFav = data.is_favorite;
+        favoriteBtn.classList.toggle("is-favorite", isFav);
+        favoriteBtn.setAttribute("aria-pressed", String(isFav));
+        favoriteBtn.setAttribute("aria-label", isFav ? "Remove from favorites" : "Add to favorites");
+        document.getElementById("favoriteBtnLabel").textContent = isFav ? "Unfavorite" : "Favorite";
+        // Re-render the heart icon
+        if (typeof lucide !== "undefined") lucide.createIcons();
+      } catch (e) {
+        console.error("Favorite toggle failed:", e);
+      } finally {
+        favoriteBtn.classList.remove("loading");
+      }
+    });
+  }
+
+  // Spoiler reveal
+  const revealBtn = document.getElementById("revealSpoilerBtn");
+  if (revealBtn) {
+    revealBtn.addEventListener("click", () => {
+      const overlay = document.getElementById("spoilerOverlay");
+      const content = document.getElementById("spoilerContent");
+      content.classList.remove("blurred");
+      overlay.remove();
+    });
+  }
+</script>
 
 <%- include("partials/footer") %>

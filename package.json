@@ -9,7 +9,9 @@
     "dev": "nodemon app.js",
     "migrate:google-books": "node scripts/runGoogleBooksMigration.js",
     "migrate:soft-delete": "node scripts/runSoftDeleteMigration.js",
-    "migrate:analytics": "node scripts/runAnalyticsMigration.js"
+    "migrate:analytics": "node scripts/runAnalyticsMigration.js",
+    "migrate:phase9": "node scripts/runPhase9Migration.js",
+    "migrate:phase10": "node scripts/runPhase10Migration.js"
   },
   "keywords": [],
   "author": "",

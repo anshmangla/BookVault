@@ -20,6 +20,92 @@ const isAuthenticated =
 
 const LIBRARY_PAGE_SIZE = 12;
 
+/*
+====================================
+HELPER: Tag sync
+====================================
+Parses a comma-separated tag string, upserts each
+tag for the user, then replaces all book_tags rows.
+Returns the final tag names array.
+*/
+async function syncBookTags(bookId, userId, rawTags) {
+  // Parse and normalise tag names
+  const tagNames = String(rawTags || "")
+    .split(",")
+    .map(t => t.trim().toLowerCase().replace(/[^a-z0-9\-_#]/g, "").slice(0, 64))
+    .filter(Boolean);
+
+  // Remove old associations first
+  await db.query(
+    `DELETE FROM book_tags
+     WHERE book_id = $1
+     AND tag_id IN (
+       SELECT id FROM tags WHERE user_id = $2
+     )`,
+    [bookId, userId]
+  );
+
+  if (tagNames.length === 0) return [];
+
+  // Upsert each tag, then link
+  for (const name of tagNames) {
+    const tagResult = await db.query(
+      `INSERT INTO tags (user_id, name)
+       VALUES ($1, $2)
+       ON CONFLICT (user_id, name) DO UPDATE SET name = EXCLUDED.name
+       RETURNING id`,
+      [userId, name]
+    );
+    const tagId = tagResult.rows[0].id;
+    await db.query(
+      `INSERT INTO book_tags (book_id, tag_id) VALUES ($1, $2)
+       ON CONFLICT DO NOTHING`,
+      [bookId, tagId]
+    );
+  }
+
+  return tagNames;
+}
+
+/*
+====================================
+HELPER: Fetch tags for a single book
+====================================
+*/
+async function getBookTags(bookId, userId) {
+  const result = await db.query(
+    `SELECT t.name
+     FROM tags t
+     JOIN book_tags bt ON bt.tag_id = t.id
+     WHERE bt.book_id = $1
+     AND t.user_id = $2
+     ORDER BY t.name`,
+    [bookId, userId]
+  );
+  return result.rows.map(r => r.name);
+}
+
+/*
+====================================
+HELPER: Fetch all tags for a user
+====================================
+*/
+async function getUserTags(userId) {
+  const result = await db.query(
+    `SELECT DISTINCT t.name
+     FROM tags t
+     WHERE t.user_id = $1
+     ORDER BY t.name`,
+    [userId]
+  );
+  return result.rows.map(r => r.name);
+}
+
+/*
+====================================
+HELPER: Duplicate detection
+====================================
+*/
 async function addDuplicateInfo(
   books,
   userId
@@ -93,6 +179,9 @@ router.get("/", isAuthenticated, async (req, res, next) => {
     const filters =
       normalizeLibraryQuery(req.query);
 
+    // Tag filter (not part of libraryQuery service)
+    const selectedTag = String(req.query.tag || "").trim().toLowerCase() || null;
+
     const {
       whereClause,
       values
@@ -101,53 +190,51 @@ router.get("/", isAuthenticated, async (req, res, next) => {
       filters
     );
 
+    // If a tag filter is active, we add a subquery condition
+    let tagWhere = whereClause;
+    let tagValues = [...values];
+
+    if (selectedTag) {
+      const tagParamIdx = tagValues.length + 1;
+      const tagUserParamIdx = tagValues.length + 2;
+      tagWhere += ` AND id IN (
+        SELECT bt.book_id FROM book_tags bt
+        JOIN tags t ON t.id = bt.tag_id
+        WHERE t.user_id = $${tagUserParamIdx}
+        AND t.name = $${tagParamIdx}
+      )`;
+      tagValues.push(selectedTag, req.session.userId);
+    }
+
     const [
       countResult,
       statsResult,
       topBookResult,
-      yearsResult
+      yearsResult,
+      userTagsResult
     ] = await Promise.all([
       db.query(
-        `
-        SELECT COUNT(*)::int AS count
-        FROM books
-        WHERE ${whereClause}
-        `,
-        values
+        `SELECT COUNT(*)::int AS count FROM books WHERE ${tagWhere}`,
+        tagValues
       ),
       db.query(
-        `
-        SELECT
-          COUNT(*)::int AS total_books,
-          AVG(rating) AS avg_rating
-        FROM books
-        WHERE user_id = $1
-        AND deleted_at IS NULL
-        `,
+        `SELECT COUNT(*)::int AS total_books, AVG(rating) AS avg_rating
+         FROM books WHERE user_id = $1 AND deleted_at IS NULL`,
         [req.session.userId]
       ),
       db.query(
-        `
-        SELECT *
-        FROM books
-        WHERE user_id = $1
-        AND deleted_at IS NULL
-        AND rating IS NOT NULL
-        ORDER BY rating DESC, created_at DESC
-        LIMIT 1
-        `,
+        `SELECT * FROM books WHERE user_id = $1 AND deleted_at IS NULL
+         AND rating IS NOT NULL ORDER BY rating DESC, created_at DESC LIMIT 1`,
         [req.session.userId]
       ),
       db.query(
-        `
-        SELECT DISTINCT
-          EXTRACT(YEAR FROM date_read)::int AS year
-        FROM books
-        WHERE user_id = $1
-        AND deleted_at IS NULL
-        AND date_read IS NOT NULL
-        ORDER BY year DESC
-        `,
+        `SELECT DISTINCT EXTRACT(YEAR FROM date_read)::int AS year
+         FROM books WHERE user_id = $1 AND deleted_at IS NULL
+         AND date_read IS NOT NULL ORDER BY year DESC`,
+        [req.session.userId]
+      ),
+      db.query(
+        `SELECT DISTINCT t.name FROM tags t WHERE t.user_id = $1 ORDER BY t.name`,
         [req.session.userId]
       )
     ]);
@@ -171,22 +258,22 @@ router.get("/", isAuthenticated, async (req, res, next) => {
       );
 
     const limitPlaceholder =
-      values.length + 1;
+      tagValues.length + 1;
     const offsetPlaceholder =
-      values.length + 2;
+      tagValues.length + 2;
 
     const booksResult =
       await db.query(
         `
         SELECT *
         FROM books
-        WHERE ${whereClause}
+        WHERE ${tagWhere}
         ORDER BY ${sortOrder(filters.sort)}
         LIMIT $${limitPlaceholder}
         OFFSET $${offsetPlaceholder}
         `,
         [
-          ...values,
+          ...tagValues,
           LIBRARY_PAGE_SIZE,
           (
             currentPage - 1
@@ -194,7 +281,14 @@ router.get("/", isAuthenticated, async (req, res, next) => {
         ]
       );
 
-    const books = booksResult.rows;
+    // Fetch tags for each book on this page
+    const books = await Promise.all(
+      booksResult.rows.map(async book => ({
+        ...book,
+        tags: await getBookTags(book.id, req.session.userId)
+      }))
+    );
+
     const totalBooks =
       Number(
         statsResult.rows[0].total_books
@@ -211,17 +305,23 @@ router.get("/", isAuthenticated, async (req, res, next) => {
       yearsResult.rows.map(
         row => row.year
       );
+    const userTags =
+      userTagsResult.rows.map(r => r.name);
 
     res.render("index", {
-      pageTitle: filters.q
-        ? `Search: ${filters.q}`
-        : "My Library",
+      pageTitle: filters.favorites
+        ? "Favorites"
+        : filters.q
+          ? `Search: ${filters.q}`
+          : "My Library",
       books,
       totalBooks,
       avgRating,
       topBook,
       totalResults,
       availableYears,
+      userTags,
+      selectedTag,
       filters: {
         ...filters,
         page: currentPage
@@ -369,7 +469,10 @@ router.post("/add", isAuthenticated, async (req, res, next) => {
       notes,
       review,
       date_read,
-      google_volume_id
+      google_volume_id,
+      tags,
+      has_spoilers,
+      visibility
     } = req.body;
 
     const cleanTitle =
@@ -484,14 +587,16 @@ router.post("/add", isAuthenticated, async (req, res, next) => {
         description,
         page_count,
         categories,
-        language
+        language,
+        has_spoilers,
+        visibility
       )
       VALUES
       (
         $1,$2,$3,$4,
         $5,$6,$7,$8,$9,$10,
         $11,$12,$13,$14,$15,
-        $16,$17,$18
+        $16,$17,$18,$19,$20
       )
       RETURNING id
       `,
@@ -515,12 +620,19 @@ router.post("/add", isAuthenticated, async (req, res, next) => {
         googleBook?.description || null,
         googleBook?.page_count || null,
         googleBook?.categories || [],
-        googleBook?.language || null
+        googleBook?.language || null,
+        has_spoilers === "on" || has_spoilers === "true",
+        visibility === 'private' ? 'private' : 'public'
       ]
     );
 
+    const newBookId = createdBook.rows[0].id;
+
+    // Save tags
+    await syncBookTags(newBookId, req.session.userId, tags);
+
     res.redirect(
-      `/book/${createdBook.rows[0].id}`
+      `/book/${newBookId}`
     );
 
   } catch (err) {
@@ -567,10 +679,12 @@ router.get("/book/:id", isAuthenticated, async (req, res, next) => {
     }
 
     const book = result.rows[0];
+    const bookTags = await getBookTags(book.id, req.session.userId);
 
     res.render("book-details", {
       pageTitle: book.title,
-      book
+      book,
+      bookTags
     });
 
   } catch(err){
@@ -578,6 +692,32 @@ router.get("/book/:id", isAuthenticated, async (req, res, next) => {
 
   }
 
+});
+
+/*
+====================================
+FAVORITE TOGGLE
+====================================
+*/
+
+router.post("/book/:id/favorite", isAuthenticated, async (req, res, next) => {
+  try {
+    const result = await db.query(
+      `UPDATE books
+       SET is_favorite = NOT is_favorite
+       WHERE id = $1 AND user_id = $2 AND deleted_at IS NULL
+       RETURNING is_favorite`,
+      [req.params.id, req.session.userId]
+    );
+
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: "Book not found." });
+    }
+
+    res.json({ is_favorite: result.rows[0].is_favorite });
+  } catch (err) {
+    next(err);
+  }
 });
 
 /*
@@ -619,9 +759,13 @@ router.get("/edit/:id", isAuthenticated, async (req, res, next) => {
 
     }
 
+    const book = result.rows[0];
+    const bookTags = await getBookTags(book.id, req.session.userId);
+
     res.render("edit", {
-      pageTitle: `Edit ${result.rows[0].title}`,
-      book: result.rows[0]
+      pageTitle: `Edit ${book.title}`,
+      book,
+      bookTags
     });
 
   } catch (err) {
@@ -648,7 +792,10 @@ router.put("/edit/:id", isAuthenticated, async (req, res, next) => {
       rating,
       notes,
       review,
-      date_read
+      date_read,
+      tags,
+      has_spoilers,
+      visibility
     } = req.body;
 
     const cleanTitle =
@@ -693,9 +840,11 @@ router.put("/edit/:id", isAuthenticated, async (req, res, next) => {
         rating = $5,
         notes = $6,
         review = $7,
-        date_read = $8
-      WHERE id = $9
-      AND user_id = $10
+        date_read = $8,
+        has_spoilers = $9,
+        visibility = $10
+      WHERE id = $11
+      AND user_id = $12
       AND deleted_at IS NULL
       RETURNING id
       `,
@@ -708,6 +857,8 @@ router.put("/edit/:id", isAuthenticated, async (req, res, next) => {
         notes,
         review,
         date_read || null,
+        has_spoilers === "on" || has_spoilers === "true",
+        visibility === 'private' ? 'private' : 'public',
         req.params.id,
         req.session.userId
       ]
@@ -723,11 +874,14 @@ router.put("/edit/:id", isAuthenticated, async (req, res, next) => {
         });
     }
 
+    // Sync tags
+    await syncBookTags(req.params.id, req.session.userId, tags);
+
     req.session.notice = {
       type: "success",
       title: "Book updated",
       message:
-        `Your changes to “${cleanTitle}” were saved.`
+        `Your changes to "${cleanTitle}" were saved.`
     };
 
     res.redirect(`/book/${req.params.id}`);
@@ -777,7 +931,7 @@ router.delete("/delete/:id", isAuthenticated, async (req, res, next) => {
       type: "info",
       title: "Book removed",
       message:
-        `“${result.rows[0].title}” was removed from your library.`,
+        `"${result.rows[0].title}" was removed from your library.`,
       undoBookId: result.rows[0].id
     };
 
@@ -821,7 +975,7 @@ router.post("/book/:id/undo", isAuthenticated, async (req, res, next) => {
       type: "success",
       title: "Book restored",
       message:
-        `“${result.rows[0].title}” is back in your library.`
+        `"${result.rows[0].title}" is back in your library.`
     };
 
     res.redirect(`/book/${result.rows[0].id}`);
