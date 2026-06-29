@@ -211,7 +211,9 @@ router.get("/", isAuthenticated, async (req, res, next) => {
       statsResult,
       topBookResult,
       yearsResult,
-      userTagsResult
+      userTagsResult,
+      userGoalResult,
+      readThisYearResult
     ] = await Promise.all([
       db.query(
         `SELECT COUNT(*)::int AS count FROM books WHERE ${tagWhere}`,
@@ -235,6 +237,17 @@ router.get("/", isAuthenticated, async (req, res, next) => {
       ),
       db.query(
         `SELECT DISTINCT t.name FROM tags t WHERE t.user_id = $1 ORDER BY t.name`,
+        [req.session.userId]
+      ),
+      db.query(
+        `SELECT reading_goal FROM users WHERE id = $1`,
+        [req.session.userId]
+      ),
+      db.query(
+        `SELECT COUNT(*)::int as read_this_year FROM books
+         WHERE user_id = $1 AND deleted_at IS NULL
+         AND EXTRACT(YEAR FROM date_read) = EXTRACT(YEAR FROM CURRENT_DATE)
+         AND (status = 'read' OR status IS NULL)`,
         [req.session.userId]
       )
     ]);
@@ -307,6 +320,10 @@ router.get("/", isAuthenticated, async (req, res, next) => {
       );
     const userTags =
       userTagsResult.rows.map(r => r.name);
+      
+    const readingGoalTarget = userGoalResult.rows[0]?.reading_goal || 24;
+    const readingGoalCurrent = readThisYearResult.rows[0] ? Number(readThisYearResult.rows[0].read_this_year) : 0;
+    const readingGoalPercent = Math.min(Math.round((readingGoalCurrent / readingGoalTarget) * 100), 100);
 
     res.render("index", {
       pageTitle: filters.favorites
@@ -321,6 +338,11 @@ router.get("/", isAuthenticated, async (req, res, next) => {
       totalResults,
       availableYears,
       userTags,
+      readingGoal: {
+        target: readingGoalTarget,
+        current: readingGoalCurrent,
+        percent: readingGoalPercent
+      },
       selectedTag,
       filters: {
         ...filters,
@@ -1041,6 +1063,7 @@ router.get("/stats", isAuthenticated, async (req, res, next) => {
         FROM books
         WHERE user_id = $1
         AND deleted_at IS NULL
+        AND (status = 'read' OR status IS NULL)
         `,
         [req.session.userId]
       ),

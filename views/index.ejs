@@ -153,9 +153,19 @@
         </div>
 
         <div>
-          <i data-lucide="trophy" aria-hidden="true"></i>
-          <strong><%= topBook ? topBook.title : "Not rated" %></strong>
-          <span>Highest rated</span>
+          <i data-lucide="target" aria-hidden="true"></i>
+          <strong><%= readingGoal.current %> / <%= readingGoal.target %></strong>
+          <span>Goal progress</span>
+        </div>
+      </div>
+
+      <div style="margin-top: 1.5rem; max-width: 450px;">
+        <div style="display: flex; justify-content: space-between; font-size: 0.875rem; color: var(--text-light); margin-bottom: 0.5rem; font-weight: 500;">
+          <span><%= new Date().getFullYear() %> Reading Goal</span>
+          <span><%= readingGoal.percent %>%</span>
+        </div>
+        <div role="progressbar" aria-valuenow="<%= Math.min(readingGoal.current, readingGoal.target) %>" aria-valuemin="0" aria-valuemax="<%= readingGoal.target %>" style="height: 10px; background: var(--surface-hover); border-radius: 8px; overflow: hidden; border: 1px solid var(--border);">
+          <div style="height: 100%; width: <%= readingGoal.percent %>%; background: var(--primary); border-radius: 8px; transition: width 0.3s ease;"></div>
         </div>
       </div>
 
