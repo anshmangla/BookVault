@@ -52,11 +52,13 @@ const authRoutes = require("./routes/auth");
 const bookRoutes = require("./routes/books");
 const profileRoutes = require("./routes/profile");
 const socialRoutes = require("./routes/social");
+const importRoutes = require("./routes/import");
 
 app.use("/", authRoutes);
 app.use("/", bookRoutes);
 app.use("/", profileRoutes);
 app.use("/", socialRoutes);
+app.use("/import", importRoutes);
 
 app.use((req, res) => {
   res.status(404).render("404", {

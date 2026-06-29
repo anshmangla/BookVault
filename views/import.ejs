@@ -1,0 +1,46 @@
+<%- include("partials/header") %>
+
+<main class="page-shell">
+  <%- include("partials/page-header", {
+    eyebrow: "Data Import",
+    icon: "file-up",
+    title: "Import from Goodreads",
+    description: "Bring your existing library into BookVault with a CSV export."
+  }) %>
+
+  <%- include("partials/action-toast") %>
+
+  <section class="surface-card form-card" aria-label="Goodreads Import Instructions">
+    <div style="margin-bottom: 2rem;">
+      <h2 class="form-section-title">How to Export from Goodreads</h2>
+      <ol style="margin-left: 1.5rem; line-height: 1.6; color: var(--text-light);">
+        <li>Log into your Goodreads account on a computer.</li>
+        <li>Click on your profile picture in the top right and select <strong>Account settings</strong>.</li>
+        <li>Go to the <strong>Export</strong> tab (or visit <a href="https://www.goodreads.com/review/import" target="_blank" style="color: var(--primary);">this link</a> directly).</li>
+        <li>Click <strong>Export Library</strong> and wait for the file to generate.</li>
+        <li>Click the link to download your CSV export file.</li>
+      </ol>
+    </div>
+
+    <form action="/import/goodreads" method="POST" enctype="multipart/form-data">
+      <div class="form-field">
+        <label class="form-label" for="csvFile">Upload your Goodreads CSV file</label>
+        <div style="padding: 2rem; border: 2px dashed var(--border); border-radius: var(--radius-md); text-align: center; background: var(--surface-hover);">
+          <i data-lucide="file-spreadsheet" aria-hidden="true" style="width: 32px; height: 32px; color: var(--text-light); margin-bottom: 1rem;"></i>
+          <input type="file" id="csvFile" name="csvFile" accept=".csv" required style="display: block; margin: 0 auto; color: var(--text);">
+          <small class="text-muted" style="display: block; margin-top: 1rem;">Max file size: 5MB</small>
+        </div>
+      </div>
+
+      <div class="form-actions" style="margin-top: 2rem;">
+        <button class="btn btn-primary" type="submit" onclick="this.innerHTML = '<i data-lucide=\'loader-2\' class=\'spin\'></i> Importing...'; this.style.pointerEvents = 'none'; this.form.submit();">
+          <i data-lucide="upload" aria-hidden="true"></i>
+          Import Books
+        </button>
+      </div>
+    </form>
+  </section>
+
+</main>
+
+<%- include("partials/footer") %>
